@@ -8,9 +8,16 @@ import prisma from "../db/prisma";
 const responseHandler = new ResponseHandler();
 
 export const getLogsByAccountId = async (req: Request, res: Response) => {
-  const { accountId } = req.params;
+  const accountId = Array.isArray(req.params.accountId)
+    ? req.params.accountId[0]
+    : req.params.accountId;
   const { page = 1, pageSize = 20 } = req.query;
   const requestUser = (req as any).user.data;
+
+  if (!accountId) {
+    responseHandler.setError(StatusCodes.BAD_REQUEST, "accountId is required");
+    return responseHandler.send(res);
+  }
 
   if (requestUser.role !== Roles.SUPERADMIN && requestUser.id !== accountId) {
     responseHandler.setError(StatusCodes.FORBIDDEN, "Forbidden");
