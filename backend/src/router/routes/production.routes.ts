@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from '../../util/cjsDeps';
 import { Roles } from "../../util/enum/Roles.enum";
 import {
   createProduction,

@@ -1,9 +1,8 @@
-import passport from "passport";
+import { passport } from "../util/cjsDeps";
 import { Strategy as LocalStrategy } from 'passport-local';
 import prisma from "../db/prisma";
 import { comparePassword } from "../service/bcrypt.service";
 import { generateToken } from "../service/token.service";
-import { AccountI } from "../interface/account.interface";
 
 interface userSchema {
   fullname: string;

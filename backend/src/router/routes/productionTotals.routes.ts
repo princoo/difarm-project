@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from '../../util/cjsDeps';
 import productionTotalsController from "../../controller/productionTotals.controller";
 import asyncWrapper from "../../util/asyncWrapper";
 import farmMiddleware from "../../middleware/farm.middleware";

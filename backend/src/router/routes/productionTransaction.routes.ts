@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from '../../util/cjsDeps';
 import { Roles } from "@prisma/client";
 import asyncWrapper from "../../util/asyncWrapper";
 import productionTransactionMiddleware from "../../middleware/productionTransaction.middleware";

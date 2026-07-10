@@ -10,7 +10,6 @@ import { UserI } from "../interface/user.interface";
 import userService from "../service/user.service";
 import templateMails from "../util/templateMails";
 import { Roles } from "@prisma/client";
-import { use } from "passport";
 import farmService from "../service/farm.service";
 import { paginate } from "../util/paginate";
 import { createLog } from "../service/activityLog.service";
@@ -399,12 +398,10 @@ export const userLogin = (req: Request, res: Response, next: NextFunction) => {
                 entityType: 'auth',
                 details: 'User logged in',
             }).then(() => {});
-            req.login(user, (err) => {
-                if (err) return next(err);
-                return res.status(StatusCodes.OK).json({
-                    message: 'Login successful',
-                    user,
-                });
+            // JWT is in `user.token`. Skip req.login session on serverless (Vercel MemoryStore).
+            return res.status(StatusCodes.OK).json({
+                message: 'Login successful',
+                user,
             });
         } catch (error) {
             return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ status: ReasonPhrases.INTERNAL_SERVER_ERROR, error: 'Server error' });

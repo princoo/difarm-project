@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from '../../util/cjsDeps';
 import checkRole from "../../middleware/checkRole.middleware";
 import { Roles } from "@prisma/client";
 import farmMiddleware from "../../middleware/farm.middleware";

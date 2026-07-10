@@ -1,4 +1,4 @@
-import express from 'express';
+import { express } from '../util/cjsDeps';
 import authRoute from './routes/auth.routes'
 import userRoutes from './routes/user.routes'
 import farmRoute from './routes/farm.routes'

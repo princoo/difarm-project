@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from '../../util/cjsDeps';
 import { getLogsByAccountId, getAllLogs, getLogsByFarm } from "../../controller/activityLog.controller";
 import checkRole from "../../middleware/checkRole.middleware";
 import { Roles } from "@prisma/client";

@@ -1,4 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router } from '../../util/cjsDeps';
+import type { Request, Response } from 'express';
 import signupValidation from '../../middleware/signupValidation.middleware';
 import {
   forgotPassword,

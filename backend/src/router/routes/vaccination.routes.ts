@@ -1,4 +1,5 @@
-import { Router, NextFunction, Request, Response } from "express";
+import { Router } from '../../util/cjsDeps';
+import type { NextFunction, Request, Response } from 'express';
 import checkRole from "../../middleware/checkRole.middleware";
 import { Roles } from "../../util/enum/Roles.enum";
 import {
