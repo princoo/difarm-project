@@ -1,60 +1,73 @@
 import dotenv from 'dotenv';
-import Jwt, { type Secret, type SignOptions } from "jsonwebtoken";
-import prisma from '../db/prisma';
-import { AccountI } from '../interface/account.interface';
+import Jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
 
 dotenv.config();
 
 interface EmailVerifyI {
-    userId: string
+  userId: string;
 }
 
-const requireEnv = (key: string): string => {
-    const value = process.env[key];
-    if (!value) {
-        throw new Error(`Missing required env var: ${key}`);
-    }
-    return value;
-};
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required env var: ${key}`);
+  }
+  return value;
+}
 
-const JWT_SECRET: Secret = requireEnv("JWT_SECRET");
-const JWT_VERIF_SECRET: Secret = requireEnv("JWT_VERIF_SECRET");
-const EXPIRE_TIME = process.env.EXPIRE_TIME as unknown as SignOptions["expiresIn"];
-const EXPIRE_VERIF_TIME = process.env.EXPIRE_VERIF_TIME as unknown as SignOptions["expiresIn"];
+function jwtSecret(): Secret {
+  return requireEnv('JWT_SECRET');
+}
+
+function jwtVerifSecret(): Secret {
+  return requireEnv('JWT_VERIF_SECRET');
+}
+
+function expireTime(): SignOptions['expiresIn'] {
+  return (process.env.EXPIRE_TIME || '7d') as SignOptions['expiresIn'];
+}
+
+function expireVerifTime(): SignOptions['expiresIn'] {
+  return (process.env.EXPIRE_VERIF_TIME || '24h') as SignOptions['expiresIn'];
+}
 
 const generateToken = (data: any) => {
-    const token = Jwt.sign({ data }, JWT_SECRET, {
-        expiresIn: EXPIRE_TIME,
-    });
-    return token;
+  return Jwt.sign({ data }, jwtSecret(), {
+    expiresIn: expireTime(),
+  });
 };
 
 const generateEmailVerificationToken = (data: EmailVerifyI) => {
-    const token = Jwt.sign({ data }, JWT_VERIF_SECRET, {
-        expiresIn: EXPIRE_VERIF_TIME,
-    });
-    return token;
+  return Jwt.sign({ data }, jwtVerifSecret(), {
+    expiresIn: expireVerifTime(),
+  });
 };
-const generateForgotPasswordToken = (data: {email: string, id: string}) => {
-    const token = Jwt.sign({ data }, JWT_SECRET);
-    return token;
+
+const generateForgotPasswordToken = (data: { email: string; id: string }) => {
+  return Jwt.sign({ data }, jwtSecret());
 };
 
 const verifyToken = (token: string, type: string): any => {
-    if (type === "verify-email") {
-        return Jwt.verify(token, JWT_VERIF_SECRET, (err, decoded) => {
-            if (err) {
-                return err;
-            }
-            return decoded;
-        });
-    }
-
-    return Jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return err;
-        }
-        return decoded;
+  if (type === 'verify-email') {
+    return Jwt.verify(token, jwtVerifSecret(), (err, decoded) => {
+      if (err) {
+        return err;
+      }
+      return decoded;
     });
+  }
+
+  return Jwt.verify(token, jwtSecret(), (err, decoded) => {
+    if (err) {
+      return err;
+    }
+    return decoded;
+  });
 };
-export { generateToken, generateEmailVerificationToken, verifyToken, generateForgotPasswordToken };
+
+export {
+  generateToken,
+  generateEmailVerificationToken,
+  verifyToken,
+  generateForgotPasswordToken,
+};

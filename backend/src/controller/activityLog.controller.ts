@@ -99,7 +99,7 @@ export const getLogsByFarm = async (req: Request, res: Response) => {
       include: { owner: { select: { accountId: true } } },
     });
 
-    if (!farm) {
+    if (!farm?.owner?.accountId) {
       responseHandler.setSuccess(StatusCodes.OK, "Activity logs retrieved", {
         data: [],
         total: 0,

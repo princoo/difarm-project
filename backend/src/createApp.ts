@@ -19,7 +19,11 @@ export { uploadsRoot };
 export function createApp(): Express {
   const app = express();
   const uploadRoot = uploadsRoot();
-  fs.mkdirSync(path.join(uploadRoot, 'vaccinations'), { recursive: true });
+  try {
+    fs.mkdirSync(path.join(uploadRoot, 'vaccinations'), { recursive: true });
+  } catch (err) {
+    console.warn('[createApp] uploads mkdir failed:', err);
+  }
 
   const allowedOrigins = [
     process.env.FRONTEND_URL,
