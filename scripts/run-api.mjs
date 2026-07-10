@@ -63,6 +63,7 @@ function startApi() {
     env: {
       ...process.env,
       PORT: apiPort,
+      DIFARM_STANDALONE_API: '1',
     },
   });
 

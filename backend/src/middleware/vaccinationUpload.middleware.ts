@@ -1,16 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import { uploadsRoot } from '../util/uploadsPath';
 
-const uploadDir = path.join(process.cwd(), 'uploads', 'vaccinations');
-
-if (!fs.existsSync(uploadDir)) {
+function ensureUploadDir() {
+  const uploadDir = path.join(uploadsRoot(), 'vaccinations');
   fs.mkdirSync(uploadDir, { recursive: true });
+  return uploadDir;
 }
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
+    cb(null, ensureUploadDir());
   },
   filename: (_req, file, cb) => {
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -34,6 +35,10 @@ export const vaccinationDocumentUpload = multer({
       cb(null, true);
       return;
     }
-    cb(new Error('Only PDF or image files (JPG, PNG, WEBP) are allowed for vaccine documents.'));
+    cb(
+      new Error(
+        'Only PDF or image files (JPG, PNG, WEBP) are allowed for vaccine documents.'
+      )
+    );
   },
 }).single('document');

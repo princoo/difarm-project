@@ -143,7 +143,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
   const take = currentPageSize;
 
   try {
-    let users = [];
+    let users: any[] = [];
     let totalCount = 0;
 
     if (user.role === Roles.SUPERADMIN) {

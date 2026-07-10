@@ -30,7 +30,7 @@ export const useLogin = () => {
             const errorMessage =
                 error.response?.data?.message ||
                 (error.request && !error.response
-                    ? 'Cannot reach the API. Run npm run dev from the difarm-next folder.'
+                    ? 'Cannot reach the API. Check that the app finished deploying and try again.'
                     : 'An error occurred during login.');
             toast.error(errorMessage);
             setLoginError(errorMessage);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "@/lib/router-compat";
 import { useGetFarmById } from "@/hooks/api/farms";
-import { api } from "@/hooks/api";
+import { api, resolveApiBaseURL } from "@/hooks/api";
 import DataTableV2, { TableColumnV2 } from "@/components/datatable";
 import formatDateToLongForm from "@/utils/DateFormattter";
 import { capitalize } from "lodash";
@@ -116,7 +116,7 @@ export default function FarmDetail() {
       render: (row) =>
         row?.documentUrl ? (
           <a
-            href={`${process.env.NEXT_PUBLIC_SERVER_URL ?? ""}${row.documentUrl}`}
+            href={`${resolveApiBaseURL()}${row.documentUrl}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline text-sm"

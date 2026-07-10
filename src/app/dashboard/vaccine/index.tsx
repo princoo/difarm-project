@@ -11,6 +11,7 @@ import UpdateVaccineModal from './update_vaccine';
 import { useSearchParams } from '@/lib/router-compat';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { canCreateEntity, canUpdateEntity } from '@/utils/permissions';
+import { resolveApiBaseURL } from '@/hooks/api';
 
 
 const VaccineRecords = () => {
@@ -82,7 +83,7 @@ const VaccineRecords = () => {
                 if (!row?.documentUrl) {
                     return <p className="text-gray-400">—</p>;
                 }
-                const href = `${process.env.NEXT_PUBLIC_SERVER_URL ?? process.env.REACT_APP_SERVER_URL ?? ''}${row.documentUrl}`;
+                const href = `${resolveApiBaseURL()}${row.documentUrl}`;
                 return (
                     <a
                         href={href}

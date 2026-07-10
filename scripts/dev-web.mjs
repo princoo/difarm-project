@@ -3,13 +3,17 @@ import { freePort } from './free-port.mjs';
 import { root, readEnv, webPort } from './read-env.mjs';
 
 const env = readEnv();
-const port = webPort(env);
+const nextPort = webPort(env);
 
-freePort(port);
+freePort(nextPort);
 
-console.log(`Starting Next.js on http://localhost:${port} ...`);
+console.log('');
+console.log('DiFarm — single Next.js process (UI + API on the same port)');
+console.log(`  Open: http://localhost:${nextPort}`);
+console.log(`  API:  http://localhost:${nextPort}/api/v1`);
+console.log('');
 
-const child = spawn('npx', ['next', 'dev', '-p', port], {
+const child = spawn('npx', ['next', 'dev', '-p', nextPort], {
   cwd: root,
   stdio: 'inherit',
   shell: true,
