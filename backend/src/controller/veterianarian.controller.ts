@@ -4,6 +4,7 @@ import prisma from "../db/prisma";
 import { StatusCodes } from "http-status-codes";
 import { Roles } from "@prisma/client";
 import { paginate } from "../util/paginate";
+import { asNumber, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -38,10 +39,11 @@ export const createVeterinarian = async (req: Request, res: Response) => {
 export const getAllVeterinarians = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
   const user = (req as any).user.data;
-  const { farmId } = req.params;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1); // Ensure page is at least 1
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100); // Ensure pageSize is between 1 and 100
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1); // Ensure page is at least 1
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100); // Ensure pageSize is between 1 and 100
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
 
@@ -102,7 +104,7 @@ export const getVeterinarianById = async (req: Request, res: Response) => {
 
 
 export const updateVeterinarian = async (req: Request, res: Response) => {
-  const { vetId } = req.params;
+  const vetId = asString(req.params.vetId);
   const { name, phone, email } = req.body;
   try {
     const veterinarian = await prisma.veterinarian.update({

@@ -4,6 +4,7 @@ import ResponseHandler from "../util/responseHandler";
 import { StatusCodes } from "http-status-codes";
 import { Farm, Roles } from "@prisma/client";
 import { ALL_FARMS_SCOPE } from "../util/farmScope";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -12,7 +13,7 @@ const checkUserFarmExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const user = (req as any).user.data;
 
   // Super admin may query across every farm with scope "all"

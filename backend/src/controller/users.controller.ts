@@ -7,13 +7,15 @@ import { AccountI } from "../interface/account.interface";
 import farmService from "../service/farm.service";
 import { StatusCodes } from "http-status-codes";
 import { paginate } from "../util/paginate";
+import { asNumber, asString } from "../util/requestParam";
 
 export const getAdminTeam = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
   const user = (req as any).user.data;
-  const { page = 1, pageSize = 50 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 50), 100);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 50);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 50), 100);
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
 
@@ -135,10 +137,11 @@ export const createUser = async (req: Request, res: Response) => {
 export const getAllUsers = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
   const user = (req as any).user.data;
-  const { farmId } = req.params;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
 
@@ -201,7 +204,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 export const getUserById = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { userId } = req.params;
+  const userId = asString(req.params.userId);
 
   try {
     const user = req.actionUser;
@@ -222,7 +225,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { userId } = req.params;
+  const userId = asString(req.params.userId);
 
   try {
     const updatedUser = await prisma.user.update({
@@ -241,7 +244,7 @@ export const updateUser = async (req: Request, res: Response) => {
 };
 export const updateAccount = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { accId } = req.params;
+  const accId = asString(req.params.accId);
   const { email, phone, username } = req.body;
 
   try {
@@ -309,7 +312,7 @@ export const updateAccount = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { userId } = req.params;
+  const userId = asString(req.params.userId);
 
   try {
     await Promise.all([

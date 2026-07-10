@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import vaccinationService from "../service/vaccination.service";
 import ResponseHandler from "../util/responseHandler";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -11,7 +12,7 @@ const checkUservaccineExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { vaccineId } = req.params;
+  const vaccineId = asString(req.params.vaccineId);
   const user = (req as any).user.data;
   const vaccine = await vaccinationService.getSingleVaccination(vaccineId);
   if (!vaccine) {

@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import { Roles } from "@prisma/client";
 import prisma from "../db/prisma";
 import userService from "../service/user.service";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -12,7 +13,7 @@ const checkUserExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { userId } = req.params;
+  const userId = asString(req.params.userId);
   const user = (req as any).user.data;
   const data = await userService.getUserById(userId);
 

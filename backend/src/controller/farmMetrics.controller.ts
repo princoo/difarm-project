@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import prisma from "../db/prisma";
 import ResponseHandler from "../util/responseHandler";
 import { farmWhere } from "../util/farmScope";
+import { asNumber, asString } from "../util/requestParam";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -21,7 +22,7 @@ function buildMonthlyCounts(records: { date: Date }[], year: number) {
 }
 
 function scopeFromReq(req: Request) {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const role = (req as any).user?.data?.role;
   return farmWhere(farmId, role);
 }
@@ -63,8 +64,8 @@ export const getCattleGenderStats = async (req: Request, res: Response) => {
 
 export const getCattleSummaryByYear = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { year } = req.params;
-  const parsedYear = Number(year) || new Date().getFullYear();
+  const year = asNumber(req.params.year);
+  const parsedYear = year || new Date().getFullYear();
 
   try {
     const start = new Date(parsedYear, 0, 1);
@@ -131,8 +132,9 @@ export const getVaccinationTotal = async (req: Request, res: Response) => {
 
 export const getVaccinationTotalByYear = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { farmId, year } = req.params;
-  const parsedYear = Number(year) || new Date().getFullYear();
+  const farmId = asString(req.params.farmId);
+  const year = asNumber(req.params.year);
+  const parsedYear = year || new Date().getFullYear();
 
   try {
     const start = new Date(parsedYear, 0, 1);
@@ -184,8 +186,9 @@ export const getInseminationTotal = async (req: Request, res: Response) => {
 
 export const getInseminationTotalByYear = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { farmId, year } = req.params;
-  const parsedYear = Number(year) || new Date().getFullYear();
+  const farmId = asString(req.params.farmId);
+  const year = asNumber(req.params.year);
+  const parsedYear = year || new Date().getFullYear();
 
   try {
     const start = new Date(parsedYear, 0, 1);

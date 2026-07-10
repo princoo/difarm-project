@@ -4,6 +4,7 @@ import stockTransValidation from "../validation/stockTrans.validation";
 import ResponseHandler from "../util/responseHandler";
 import AuthorizedOnProperty from "./checkOwner.middleware";
 import stockTransactionService from "../service/stockTransaction.service";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -20,7 +21,7 @@ const validationMiddleware = (req: Request, res:Response, next: NextFunction) =>
 };
 
 const checkStockTransactionExists = async(req:Request, res:Response,next:NextFunction)=>{
-    const {id} = req.params;
+    const id = asString(req.params.id);
     const user = (req as any).user.data;
     const stockTransaction = await stockTransactionService.signleStocktransaction(id)
     if (!stockTransaction) {

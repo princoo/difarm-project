@@ -4,6 +4,7 @@ import stockValidation from "../validation/stock.validation";
 import ResponseHandler from "../util/responseHandler";
 import stockService from "../service/stock.service";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -20,7 +21,7 @@ const validationMiddleware = (req: Request, res:Response, next: NextFunction) =>
 };
 
 const checkUserStockExists = async(req:Request, res:Response,next:NextFunction)=>{
-    const {id} = req.params;
+    const id = asString(req.params.id);
     const user = (req as any).user.data;
     const stock = await stockService.signleStock(id)
     if (!stock) {

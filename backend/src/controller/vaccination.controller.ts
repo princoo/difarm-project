@@ -5,6 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import { Roles, Vaccination } from "@prisma/client";
 import { paginate } from "../util/paginate";
 import { farmWhere } from "../util/farmScope";
+import { asNumber, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -38,10 +39,11 @@ export const recordVaccination = async (req: Request, res: Response) => {
 export const getAllVaccinations = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
   const user = (req as any).user.data;
-  const { farmId } = req.params;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
 
@@ -103,7 +105,7 @@ export const getAllVaccinations = async (req: Request, res: Response) => {
   };
   
   export const updateVaccination = async (req: Request, res: Response) => {
-    const { vaccineId } = req.params;
+    const vaccineId = asString(req.params.vaccineId);
     const { cattleId, date, vaccineType, vetId, price } = req.body;
     const uploaded = (req as any).file as Express.Multer.File | undefined;
     try {

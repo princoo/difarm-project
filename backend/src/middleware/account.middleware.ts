@@ -4,6 +4,7 @@ import ResponseHandler from "../util/responseHandler";
 import { StatusCodes } from "http-status-codes";
 import { Farm, Roles } from "@prisma/client";
 import userService from "../service/user.service";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -12,7 +13,7 @@ const checkAccountExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { accId } = req.params;
+  const accId = asString(req.params.accId);
   const user = (req as any).user.data;
   const data = await userService.getAccountById(accId);
 

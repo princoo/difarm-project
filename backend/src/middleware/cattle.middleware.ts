@@ -4,6 +4,7 @@ import cattleService from "../service/cattle.service";
 import ResponseHandler from "../util/responseHandler";
 import AuthorizedOnProperty from "./checkOwner.middleware";
 import { StatusCodes } from "http-status-codes";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -20,7 +21,7 @@ const cattlesValidation = (req: Request, res:Response, next: NextFunction) => {
 };
 
 const checkUserCattleExists = async(req:Request, res:Response,next:NextFunction)=>{
-    const {cattleId} = req.params;
+    const cattleId = asString(req.params.cattleId);
     const user = (req as any).user.data;
     const cattle = await cattleService.getSingleCattle(cattleId)
     if (!cattle) {

@@ -5,6 +5,7 @@ import { TransactionEnum } from '../util/enum/StockTrans.enum';
 import { PrismaClient, Roles } from '@prisma/client';
 import stockTransactionService from "../service/stockTransaction.service";
 import { paginate } from '../util/paginate';
+import { asNumber, asString } from '../util/requestParam';
 
 const responseHandler = new ResponseHandler();
 
@@ -90,10 +91,11 @@ export const createTransaction = async (req: Request, res: Response) => {
 
 export const getAllTransactions = async (req: Request, res: Response) => {
   const user = (req as any).user.data;
-  const { farmId } = req.params;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
 
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
@@ -133,7 +135,7 @@ export const getAllTransactions = async (req: Request, res: Response) => {
 };
 
 export const getTransactionById = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
 
   try {
     // const transaction = await prisma.transaction.findUnique({ where: { id } });
@@ -152,7 +154,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
 };
 
 export const updateTransaction = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
   const { quantity, type } = req.body;
 
   try {
@@ -193,7 +195,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
 };
 
 export const deleteTransaction = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
 
   try {
     const transaction = await prisma.transaction.findUnique({ where: { id } });

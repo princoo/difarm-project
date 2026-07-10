@@ -8,13 +8,14 @@ import productionTotalsService from "../service/productionTotals.service";
 import { ProductType } from "@prisma/client";
 import { paginate } from '../util/paginate';
 import { farmWhere } from '../util/farmScope';
+import { asNumber, asString } from '../util/requestParam';
 
 const responseHandler = new ResponseHandler();
 
 export const createProduction = async (req: Request, res: Response, _next:NextFunction) => {
     const { cattleId, productName, quantity, productionDate, expirationDate } = req.body;
     const { userId } = (req as any).user.data;
-    const {farmId}= req.params
+    const farmId = asString(req.params.farmId);
     try {
         // const userFarm = await prisma.farm.findFirst({
         //     where: { ownerId: userId },
@@ -70,10 +71,11 @@ export const createProduction = async (req: Request, res: Response, _next:NextFu
 export const getAllProductions = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
   const user = (req as any).user.data;
-  const { farmId } = req.params;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
 
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
@@ -128,7 +130,7 @@ export const getProductionById = async (req: Request, res: Response) => {
 };
 
 export const updateProduction = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = asString(req.params.id);
     const { productName, quantity, productionDate, expirationDate } = req.body;
     const {farmId, quantity: previousQuantity, productName: prodType} = req.production
 
@@ -162,7 +164,7 @@ export const updateProduction = async (req: Request, res: Response) => {
 };
 
 export const deleteProduction = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = asString(req.params.id);
 
     try {
         await prisma.production.delete({

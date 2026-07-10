@@ -5,6 +5,7 @@ import prisma from "../db/prisma";
 import { sendEmail } from "../service/sendEmail.service";
 import { Roles } from "@prisma/client";
 import { createLog } from "../service/activityLog.service";
+import { asOptionalString, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -91,7 +92,7 @@ export const createFarm = async (req: Request, res: Response) => {
 };
 
 export const activateFarm = async (req: Request, res: Response) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const requestUser = (req as any).user?.data;
   try {
     const farm = await prisma.farm.update({
@@ -118,7 +119,11 @@ export const activateFarm = async (req: Request, res: Response) => {
 export const getFarms = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user.data;
-    const { status, search, location, ownerId, unassigned } = req.query;
+    const status = asOptionalString(req.query.status);
+    const search = asOptionalString(req.query.search);
+    const location = asOptionalString(req.query.location);
+    const ownerId = asOptionalString(req.query.ownerId);
+    const unassigned = asOptionalString(req.query.unassigned);
 
     const include = {
       owner: { include: { account: { select: { username: true, role: true } } } },
@@ -136,7 +141,7 @@ export const getFarms = async (req: Request, res: Response) => {
       if (user.role === Roles.MANAGER) {
         where.status = true;
       } else if (status !== undefined && status !== "") {
-        where.status = String(status) === "true";
+        where.status = status === "true";
       }
 
       const farms = await prisma.farm.findMany({
@@ -151,15 +156,15 @@ export const getFarms = async (req: Request, res: Response) => {
     if (user.role === Roles.SUPERADMIN) {
       const where: any = {};
       if (status !== undefined && status !== "") {
-        where.status = String(status) === "true";
+        where.status = status === "true";
       }
-      if (search && typeof search === "string" && search.trim()) {
+      if (search?.trim()) {
         where.name = { contains: search.trim(), mode: "insensitive" };
       }
-      if (location && typeof location === "string" && location.trim()) {
+      if (location?.trim()) {
         where.location = { contains: location.trim(), mode: "insensitive" };
       }
-      if (ownerId && typeof ownerId === "string" && ownerId.trim()) {
+      if (ownerId?.trim()) {
         where.ownerId = ownerId.trim();
       }
       if (unassigned === "true") {
@@ -202,7 +207,7 @@ export const getFarms = async (req: Request, res: Response) => {
 };
 
 export const getFarmById = async (req: Request, res: Response) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
 
   try {
     const farm = req.farm
@@ -223,7 +228,7 @@ export const getFarmById = async (req: Request, res: Response) => {
 };
 
 export const updateFarm = async (req: Request, res: Response) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const { name, location, size, type, ownerId, status } = req.body;
   const requestUser = (req as any).user?.data;
 
@@ -254,7 +259,7 @@ export const updateFarm = async (req: Request, res: Response) => {
 };
 
 export const deleteFarm = async (req: Request, res: Response) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
 
   try {
     await prisma.farm.delete({

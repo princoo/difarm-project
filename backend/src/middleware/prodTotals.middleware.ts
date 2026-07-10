@@ -3,11 +3,12 @@ import { Request, Response, NextFunction } from "express";
 import ResponseHandler from "../util/responseHandler";
 import productionTotalsService from "../service/productionTotals.service";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
 const checkProdInfoExists = async(req:Request, res:Response,next:NextFunction)=>{
-  const {infoId} = req.params;
+  const infoId = asString(req.params.infoId);
   const user = (req as any).user.data;
   const productInfo = await productionTotalsService.singleProductInfo(infoId)
   if (!productInfo) {

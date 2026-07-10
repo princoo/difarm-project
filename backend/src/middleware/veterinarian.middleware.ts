@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import veterianService from "../service/veterian.service";
 import ResponseHandler from "../util/responseHandler";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -11,7 +12,7 @@ const checkVetExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { vetId } = req.params;
+  const vetId = asString(req.params.vetId);
   const user = (req as any).user.data;
   const veterian = await veterianService.getSingleVet(vetId);
   if (!veterian) {

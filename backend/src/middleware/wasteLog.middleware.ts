@@ -3,6 +3,7 @@ import wasteLogsService from "../service/wasteLogs.service";
 import ResponseHandler from "../util/responseHandler";
 import { StatusCodes } from "http-status-codes";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -11,7 +12,7 @@ const checkWasteLogExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { wasteId } = req.params;
+  const wasteId = asString(req.params.wasteId);
   const user = (req as any).user.data;
   const data = await wasteLogsService.getWasteLogById(wasteId);
 

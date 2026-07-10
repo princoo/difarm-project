@@ -4,14 +4,14 @@ import ResponseHandler from "../util/responseHandler";
 import * as activityLogService from "../service/activityLog.service";
 import { Roles } from "@prisma/client";
 import prisma from "../db/prisma";
+import { asNumber, asOptionalString, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
 export const getLogsByAccountId = async (req: Request, res: Response) => {
-  const accountId = Array.isArray(req.params.accountId)
-    ? req.params.accountId[0]
-    : req.params.accountId;
-  const { page = 1, pageSize = 20 } = req.query;
+  const accountId = asString(req.params.accountId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 20);
   const requestUser = (req as any).user.data;
 
   if (!accountId) {
@@ -27,8 +27,8 @@ export const getLogsByAccountId = async (req: Request, res: Response) => {
   try {
     const result = await activityLogService.getLogsByAccountId(
       accountId,
-      Number(page),
-      Number(pageSize)
+      page,
+      pageSize
     );
     responseHandler.setSuccess(StatusCodes.OK, "Activity logs retrieved", result);
   } catch (error) {
@@ -39,7 +39,12 @@ export const getLogsByAccountId = async (req: Request, res: Response) => {
 };
 
 export const getAllLogs = async (req: Request, res: Response) => {
-  const { page = 1, pageSize = 50, userId, accountId, action, entityType } = req.query;
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 50);
+  const userId = asOptionalString(req.query.userId);
+  const accountId = asOptionalString(req.query.accountId);
+  const action = asOptionalString(req.query.action);
+  const entityType = asOptionalString(req.query.entityType);
   const requestUser = (req as any).user.data;
 
   if (requestUser.role !== Roles.SUPERADMIN) {
@@ -48,21 +53,21 @@ export const getAllLogs = async (req: Request, res: Response) => {
   }
 
   try {
-    let resolvedAccountId: string | undefined = accountId as string | undefined;
+    let resolvedAccountId = accountId;
     if (userId && !accountId) {
       const user = await prisma.user.findUnique({
-        where: { id: userId as string },
+        where: { id: userId },
         select: { accountId: true },
       });
       resolvedAccountId = user?.accountId;
     }
     const result = await activityLogService.getAllLogs(
-      Number(page),
-      Number(pageSize),
+      page,
+      pageSize,
       undefined,
       resolvedAccountId,
-      (action as string) || undefined,
-      (entityType as string) || undefined
+      action,
+      entityType
     );
     responseHandler.setSuccess(StatusCodes.OK, "Activity logs retrieved", result);
   } catch (error) {
@@ -73,7 +78,11 @@ export const getAllLogs = async (req: Request, res: Response) => {
 };
 
 export const getLogsByFarm = async (req: Request, res: Response) => {
-  const { page = 1, pageSize = 50, accountId, action, entityType } = req.query;
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 50);
+  const accountId = asOptionalString(req.query.accountId);
+  const action = asOptionalString(req.query.action);
+  const entityType = asOptionalString(req.query.entityType);
   const requestUser = (req as any).user.data;
 
   if (requestUser.role !== Roles.ADMIN && requestUser.role !== Roles.MANAGER) {
@@ -94,8 +103,8 @@ export const getLogsByFarm = async (req: Request, res: Response) => {
       responseHandler.setSuccess(StatusCodes.OK, "Activity logs retrieved", {
         data: [],
         total: 0,
-        page: Number(page),
-        pageSize: Number(pageSize),
+        page,
+        pageSize,
       });
       return responseHandler.send(res);
     }
@@ -109,7 +118,7 @@ export const getLogsByFarm = async (req: Request, res: Response) => {
       if (manager?.accountId) accountIds.push(manager.accountId);
     }
 
-    const filterAccountId = (accountId as string) || undefined;
+    const filterAccountId = accountId;
     const idsToUse =
       filterAccountId && accountIds.includes(filterAccountId)
         ? [filterAccountId]
@@ -117,10 +126,10 @@ export const getLogsByFarm = async (req: Request, res: Response) => {
 
     const result = await activityLogService.getLogsByAccountIds(
       idsToUse,
-      Number(page),
-      Number(pageSize),
-      (action as string) || undefined,
-      (entityType as string) || undefined
+      page,
+      pageSize,
+      action,
+      entityType
     );
     responseHandler.setSuccess(StatusCodes.OK, "Activity logs retrieved", result);
   } catch (error) {

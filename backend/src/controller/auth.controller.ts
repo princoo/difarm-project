@@ -14,6 +14,7 @@ import { use } from "passport";
 import farmService from "../service/farm.service";
 import { paginate } from "../util/paginate";
 import { createLog } from "../service/activityLog.service";
+import { asNumber, asOptionalString, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -207,9 +208,12 @@ export const registerSuperAdmin = async (req: Request, res: Response) => {
 };
 export const getAllUsers = async (req: Request, res: Response) => {
     const responseHandler = new ResponseHandler();
-    const { page = 1, pageSize = 10, role, status } = req.query;
-    const currentPage = Math.max(1, Number(page) || 1);
-    const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+    const page = asNumber(req.query.page, 1);
+    const pageSize = asNumber(req.query.pageSize, 10);
+    const role = asOptionalString(req.query.role);
+    const status = asOptionalString(req.query.status);
+    const currentPage = Math.max(1, page || 1);
+    const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
 
     const skip = (currentPage - 1) * currentPageSize;
     const take = currentPageSize;
@@ -249,7 +253,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
   };
 
 export const activateAccount = async (req: Request, res: Response) => {
-    const { accountId } = req.params;
+    const accountId = asString(req.params.accountId);
     const requestUser = (req as any).user?.data;
     try {
       const account = await prisma.account.update({
@@ -349,14 +353,14 @@ export const registerVeterinarian = async (req: Request, res: Response) => {
   };
 
 export const emailVerification = async (req: Request, res: Response) => {
-    const { token } = req.query;
+    const token = asOptionalString(req.query.token);
 
     if (!token) {
         return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Invalid verification link.' });
     }
 
     try {
-        const decoded = verifyToken(token as string, "verify-email");
+        const decoded = verifyToken(token, "verify-email");
         const userId = decoded?.data?.userId ?? decoded?.userId;
         const user = await prisma.user.findUnique({ where: { id: userId } });
         const account = await prisma.account.findUnique({ where: { id: user?.accountId } });
@@ -467,7 +471,7 @@ return res
 };
 
 export const resetPassword = async (req: Request, res: Response,_next:NextFunction) => {
-  const { token } = req.params;
+  const token = asString(req.params.token);
   if (!token) {
     return res.status(StatusCodes.NOT_FOUND).json({
         message: "No token provided",

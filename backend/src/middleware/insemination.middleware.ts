@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import inseminationService from "../service/insemination.service";
 import ResponseHandler from "../util/responseHandler";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -11,7 +12,7 @@ const checkInseminationExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { inseminationId } = req.params;
+  const inseminationId = asString(req.params.inseminationId);
   const user = (req as any).user.data;
   const insemination = await inseminationService.getSingleInsemination(inseminationId);
   if (!insemination) {

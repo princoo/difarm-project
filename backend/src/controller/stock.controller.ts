@@ -6,6 +6,7 @@ import { StatusCodes } from 'http-status-codes';
 import stockService from "../service/stock.service";
 import { paginate } from '../util/paginate';
 import { farmWhere } from '../util/farmScope';
+import { asNumber, asString } from '../util/requestParam';
 
 const responseHandler = new ResponseHandler();
 
@@ -62,11 +63,12 @@ export const createStock = async (req: Request, res: Response) => {
 };
 
 export const getAllStocks = async (req: Request, res: Response) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const user = (req as any).user.data;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1); // Ensure page is at least 1
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100); // Ensure pageSize is between 1 and 100
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1); // Ensure page is at least 1
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100); // Ensure pageSize is between 1 and 100
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
 
@@ -111,7 +113,7 @@ export const getAllStocks = async (req: Request, res: Response) => {
 };
 
 export const getStockById = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
 
   try {
     // const stock = await prisma.stock.findUnique({ where: { id } });
@@ -130,7 +132,7 @@ export const getStockById = async (req: Request, res: Response) => {
 };
 
 export const updateStock = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
   const body = req.body;
 
   try {
@@ -171,7 +173,7 @@ export const updateStock = async (req: Request, res: Response) => {
 };
 
 export const deleteStock = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
 
   try {
     await prisma.stock.delete({ where: { id } });

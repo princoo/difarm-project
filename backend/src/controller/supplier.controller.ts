@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { Roles } from '@prisma/client';
 import prisma from '../db/prisma';
 import { paginate } from '../util/paginate';
+import { asNumber, asString } from '../util/requestParam';
 
 const responseHandler = new ResponseHandler();
 
@@ -33,11 +34,12 @@ export const createSupplier = async (req: Request, res: Response) => {
 };
 
 export const getSuppliersByFarm = async (req: Request, res: Response) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const user = (req as any).user.data;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 500);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 500);
   const skip = (currentPage - 1) * currentPageSize;
 
   try {
@@ -77,7 +79,7 @@ export const getSuppliersByFarm = async (req: Request, res: Response) => {
 };
 
 export const updateSupplier = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
   const { name, contactPerson, phone, email, address, status } = req.body;
 
   try {
@@ -102,7 +104,7 @@ export const updateSupplier = async (req: Request, res: Response) => {
 };
 
 export const deleteSupplier = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
 
   try {
     await prisma.supplier.delete({ where: { id } });

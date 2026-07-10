@@ -7,6 +7,7 @@ import productionTotalsService from "../service/productionTotals.service";
 import { Roles } from "@prisma/client";
 import prisma from "../db/prisma";
 import { paginate } from "../util/paginate";
+import { asNumber, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -15,7 +16,7 @@ const addTransaction = async (
   res: Response,
   _next: NextFunction
 ) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const { quantity, productType } = req.body;
   const amountValue = quantity * req.productInfo?.pricePerUnit!;
   const body: ProdTransactionBody = {
@@ -39,11 +40,12 @@ const allTransactions = async (
   res: Response,
   _next: NextFunction
 ) => {
-  const { farmId } = req.params;
-  const { page = 1, pageSize = 10 } = req.query;
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
   const user = (req as any).user.data;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
 
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
@@ -113,7 +115,7 @@ const updateTransactions = async (
   res: Response,
   _next: NextFunction
 ) => {
-  const { transactionId } = req.params;
+  const transactionId = asString(req.params.transactionId);
   const { farmId, productType } = req.transaction;
   const { quantity } = req.body;
 
@@ -156,7 +158,7 @@ const removeTransactions = async (
   res: Response,
   _next: NextFunction
 ) => {
-  const { transactionId } = req.params;
+  const transactionId = asString(req.params.transactionId);
   const data = await productionTransactionService.deleteTransactions(
     transactionId
   );

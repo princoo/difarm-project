@@ -6,6 +6,7 @@ import { StatusCodes } from "http-status-codes";
 import { paginate } from "../util/paginate";
 import { searchUtil } from "../util/search";
 import { farmWhere } from "../util/farmScope";
+import { asNumber, asOptionalString, asString } from "../util/requestParam";
 
 export const createCattle = async (req: Request, res: Response) => {
   const {
@@ -21,7 +22,7 @@ export const createCattle = async (req: Request, res: Response) => {
     price,
     motherTag,
   } = req.body;
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   // const { tagNumber, breed, gender, DOB, weight, location, farmId, lastCheckupDate, vaccineHistory, purchaseDate, price } = req.body;
   const responseHandler = new ResponseHandler();
 
@@ -84,17 +85,19 @@ export const createCattle = async (req: Request, res: Response) => {
 
 export const getCattles = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
-  const { page = 1, pageSize = 10, search } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const search = asOptionalString(req.query.search);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
 
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
 
   try {
-    const { farmId } = req.params;
+    const farmId = asString(req.params.farmId);
     const user = (req as any).user?.data;
-    const searchString: any = typeof search === 'string' ? search : '';
+    const searchString = search ?? '';
     const searchCondition :any = searchString
       ? {
           OR: [
@@ -163,7 +166,7 @@ export const getCattleById = async (req: Request, res: Response) => {
 };
 
 export const getCattleReport = async (req: Request, res: Response) => {
-  const { cattleId } = req.params;
+  const cattleId = asString(req.params.cattleId);
   const responseHandler = new ResponseHandler();
 
   try {
@@ -191,7 +194,7 @@ export const getCattleReport = async (req: Request, res: Response) => {
 };
 
 export const updateCattle = async (req: Request, res: Response) => {
-  const { cattleId } = req.params;
+  const cattleId = asString(req.params.cattleId);
   const {
     tagNumber,
     breed,
@@ -245,7 +248,7 @@ export const updateCattle = async (req: Request, res: Response) => {
 };
 
 export const deleteCattle = async (req: Request, res: Response) => {
-  const { cattleId } = req.params;
+  const cattleId = asString(req.params.cattleId);
   const responseHandler = new ResponseHandler();
 
   try {

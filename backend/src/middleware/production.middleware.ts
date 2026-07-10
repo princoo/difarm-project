@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import productionService from "../service/production.service";
 import ResponseHandler from "../util/responseHandler";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -11,7 +12,7 @@ const checkUserproductionExists = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { id } = req.params;
+  const id = asString(req.params.id);
   const user = (req as any).user.data;
   const production = await productionService.getSingleproduction(id);
   if (!production) {

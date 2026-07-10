@@ -3,6 +3,7 @@ import productionTransactionService from "../service/productionTransaction.servi
 import { Request, Response, NextFunction } from "express";
 import ResponseHandler from "../util/responseHandler";
 import AuthorizedOnProperty from "./checkOwner.middleware";
+import { asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -11,7 +12,7 @@ const checkProductAvailable = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { farmId } = req.params;
+  const farmId = asString(req.params.farmId);
   const { productType, quantity } = req.body;
   const data = await productionTransactionService.getFarmProductionRecord(
     farmId,
@@ -43,7 +44,7 @@ const checkProductAvailable = async (
 };
 
 const checkUserTansactionExists = async(req:Request, res:Response,next:NextFunction)=>{
-  const {transactionId} = req.params;
+  const transactionId = asString(req.params.transactionId);
   const user = (req as any).user.data;
   const transaction = await productionTransactionService.getSingleTransactions(transactionId)
   if (!transaction) {

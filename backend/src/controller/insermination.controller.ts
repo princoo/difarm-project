@@ -5,6 +5,7 @@ import ResponseHandler from "../util/responseHandler";
 import { Roles } from "@prisma/client";
 import { paginate } from "../util/paginate";
 import { farmWhere } from "../util/farmScope";
+import { asNumber, asString } from "../util/requestParam";
 
 
 const responseHandler = new ResponseHandler();
@@ -38,9 +39,11 @@ export const recordInsemination = async (req: Request, res: Response) => {
 export const getAllInseminations = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
 
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1);
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100);
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
 
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
@@ -52,14 +55,14 @@ export const getAllInseminations = async (req: Request, res: Response) => {
 
     if (user.role === Roles.ADMIN || user.role === Roles.MANAGER || user.role === Roles.VETERINARIAN) {
       inseminations = await prisma.insemination.findMany({
-        where: { farmId: req.params.farmId },
+        where: { farmId },
         include: { cattle: true, veterinarian: true },
         orderBy: { date: 'desc' },
         skip,
         take,
       });
     } else {
-      const where = farmWhere(req.params.farmId, user.role);
+      const where = farmWhere(farmId, user.role);
       inseminations = await prisma.insemination.findMany({
         where,
         include: { cattle: true,veterinarian:true },
@@ -70,8 +73,8 @@ export const getAllInseminations = async (req: Request, res: Response) => {
     }
     const totalCount = await prisma.insemination.count({
       where: (user.role === Roles.ADMIN || user.role === Roles.MANAGER || user.role === Roles.VETERINARIAN)
-        ? { farmId: req.params.farmId }
-        : farmWhere(req.params.farmId, user.role),
+        ? { farmId }
+        : farmWhere(farmId, user.role),
     });
     const paginationResult = paginate(inseminations, totalCount, currentPage, currentPageSize);
 
@@ -101,7 +104,7 @@ export const getInseminationById = async (req: Request, res: Response) => {
 };
 
 export const updateInsemination = async (req: Request, res: Response) => {
-  const { inseminationId } = req.params;
+  const inseminationId = asString(req.params.inseminationId);
   const { cattleId, date, method, vetId } = req.body;
   try {
     const insemination = await prisma.insemination.update({

@@ -8,6 +8,7 @@ import { Roles } from "@prisma/client";
 import prisma from "../db/prisma";
 import { paginate } from "../util/paginate";
 import { farmWhere } from "../util/farmScope";
+import { asNumber, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
@@ -17,7 +18,7 @@ const createWasteLog = async (
   _next: NextFunction
 ) => {
   const { type, quantity, date } = req.body;
-  const {farmId} = req.params
+  const farmId = asString(req.params.farmId);
   const farmWasteData: WasteLogType = { type, quantity, date, farmId };
 
   const newLogResult = await wasteLogsService.addWasteLog(farmWasteData);
@@ -36,10 +37,11 @@ const createWasteLog = async (
 
 export const allWasteLogs = async (req: Request, res: Response, _next: NextFunction) => {
   const responseHandler = new ResponseHandler();
-  const { farmId } = req.params;
-  const { page = 1, pageSize = 10 } = req.query;
-  const currentPage = Math.max(1, Number(page) || 1); // Ensure page is at least 1
-  const currentPageSize = Math.min(Math.max(1, Number(pageSize) || 10), 100); // Ensure pageSize is between 1 and 100
+  const farmId = asString(req.params.farmId);
+  const page = asNumber(req.query.page, 1);
+  const pageSize = asNumber(req.query.pageSize, 10);
+  const currentPage = Math.max(1, page || 1); // Ensure page is at least 1
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100); // Ensure pageSize is between 1 and 100
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
   const user = (req as any).user.data;
@@ -90,7 +92,7 @@ const singleWasteLog = async (
   res: Response,
   _next: NextFunction
 ) => {
-  const { wasteId } = req.params;
+  const wasteId = asString(req.params.wasteId);
   const updatedLogResult = await wasteLogsService.getWasteLogById(wasteId);
   responseHandler.setSuccess(
     StatusCodes.CREATED,
@@ -105,7 +107,7 @@ const updateWasteLog = async (
   res: Response,
   _next: NextFunction
 ) => {
-  const { wasteId } = req.params;
+  const wasteId = asString(req.params.wasteId);
   const {quantity} = req.body
   const {farmId, quantity: previousQuantity, type} = req.wasteLog
 
@@ -136,7 +138,7 @@ const deleteWasteLog = async (
   res: Response,
   _next: NextFunction
 ) => {
-  const { wasteId } = req.params;
+  const wasteId = asString(req.params.wasteId);
   const deleteLogResult = await wasteLogsService.removeWasteLogById(wasteId);
   responseHandler.setSuccess(
     StatusCodes.CREATED,
