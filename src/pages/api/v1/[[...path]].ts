@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import serverless from 'serverless-http';
-import { createApp } from '../../../../backend/src/createApp';
 
 export const config = {
   api: {
-    // Express parses the body; Next must not consume the stream first.
     bodyParser: false,
     externalResolver: true,
   },
@@ -18,10 +15,13 @@ type ServerlessHandler = (
 let cached: ServerlessHandler | null = null;
 let initError: Error | null = null;
 
-function getHandler(): ServerlessHandler {
+async function getHandler(): Promise<ServerlessHandler> {
   if (initError) throw initError;
   if (cached) return cached;
   try {
+    // Dynamic import so module-load failures become JSON 500s, not Next HTML 500.
+    const { createApp } = await import('../../../../backend/src/createApp');
+    const serverless = (await import('serverless-http')).default;
     const app = createApp();
     cached = serverless(app, {
       binary: [
@@ -39,7 +39,6 @@ function getHandler(): ServerlessHandler {
   }
 }
 
-/** Ensure Express sees /api/v1/... even when Next strips the prefix. */
 function normalizeUrl(req: NextApiRequest) {
   const current = req.url || '/';
   if (current.startsWith('/api/v1')) return;
@@ -56,15 +55,22 @@ function normalizeUrl(req: NextApiRequest) {
 }
 
 /**
- * Mounts the Express API under /api/v1/* on the same Next.js / Vercel host.
+ * Catch-all for remaining /api/v1/* routes (login/health have dedicated pages).
  */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
+    if (!process.env.DATABASE_URL) {
+      return res.status(500).json({
+        ok: false,
+        message:
+          'DATABASE_URL is not set in Vercel Environment Variables. Add your Railway Postgres URL and redeploy.',
+      });
+    }
     normalizeUrl(req);
-    const run = getHandler();
+    const run = await getHandler();
     await run(req, res);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'API failed to start';
@@ -75,7 +81,7 @@ export default async function handler(
         message,
         stack: err instanceof Error ? err.stack : undefined,
         hint:
-          'Redeploy after pulling latest. Vercel env must include DATABASE_URL, JWT_SECRET, JWT_VERIF_SECRET.',
+          'Set DATABASE_URL, JWT_SECRET, JWT_VERIF_SECRET in Vercel → Settings → Environment Variables, then Redeploy.',
       });
     }
   }
