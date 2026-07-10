@@ -1,0 +1,223 @@
+/* DiFarm stock management — PodCafe layout with DiFarm brand colors */
+.stock-mgmt-page {
+  --stock-primary: #228b22;
+  --stock-primary-dark: #166534;
+  --stock-primary-light: rgba(34, 139, 34, 0.12);
+  --stock-muted: #506690;
+  --stock-text: #0e1726;
+  --stock-text-secondary: #888ea8;
+  --stock-surface: #ffffff;
+  --stock-surface-muted: #f6f8fa;
+  --stock-surface-elevated: #ffffff;
+  --stock-panel-bg: #ffffff;
+  --stock-border: #e0e6ed;
+  --stock-border-strong: #d1d5db;
+  --stock-shadow: 0 2px 2px rgb(224 230 237 / 46%), 1px 6px 7px rgb(224 230 237 / 46%);
+}
+
+.dark .stock-mgmt-page {
+  --stock-muted: #888ea8;
+  --stock-text: #e0e6ed;
+  --stock-text-secondary: #888ea8;
+  --stock-surface: #121e32;
+  --stock-surface-muted: #0e1726;
+  --stock-surface-elevated: #0e1726;
+  --stock-panel-bg: rgba(14, 23, 38, 0.92);
+  --stock-border: #17263c;
+  --stock-border-strong: #1b2e4b;
+  --stock-shadow: none;
+}
+
+.stock-mgmt-page .text-linked {
+  color: var(--stock-muted);
+}
+
+.stock-mgmt-page .stock-text {
+  color: var(--stock-text);
+}
+
+.stock-mgmt-page .difarm-gradient {
+  background: linear-gradient(135deg, #228b22 0%, #166534 100%);
+  color: #ffffff;
+}
+
+.stock-mgmt-page .pos-stitch-panel {
+  background: var(--stock-panel-bg);
+  border: 1px solid var(--stock-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--stock-shadow);
+}
+
+.dark .stock-mgmt-page .pos-stitch-panel {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.stock-mgmt-page .pos-stitch-metric {
+  background: var(--stock-surface-elevated);
+  border: 1px solid var(--stock-border);
+  border-radius: 1rem;
+  box-shadow: var(--stock-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stock-mgmt-page .pos-stitch-metric:hover {
+  border-color: color-mix(in srgb, var(--stock-primary) 35%, var(--stock-border));
+}
+
+.stock-mgmt-page .pos-stitch-card {
+  background: var(--stock-surface-elevated) !important;
+  color: var(--stock-text);
+  border: 1px solid var(--stock-border);
+  border-radius: 1rem;
+  box-shadow: var(--stock-shadow);
+  transition: border-color 0.2s ease;
+}
+
+.stock-mgmt-page .pos-stitch-card:hover {
+  border-color: color-mix(in srgb, var(--stock-primary) 25%, var(--stock-border));
+}
+
+.stock-mgmt-page .pos-stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--stock-text);
+}
+
+.stock-mgmt-page .pos-stock-table :is(th, td) {
+  border: 1px solid var(--stock-border);
+}
+
+.stock-mgmt-page .pos-stock-table thead tr {
+  background: var(--stock-surface-muted);
+}
+
+.stock-mgmt-page .pos-stock-table thead th {
+  color: var(--stock-muted);
+}
+
+.stock-mgmt-page .pos-stock-table tbody tr:hover {
+  background: var(--stock-primary-light);
+}
+
+.dark .stock-mgmt-page .pos-stock-table tbody tr:hover {
+  background: rgba(34, 139, 34, 0.08);
+}
+
+.stock-mgmt-page .pos-stock-table tbody tr.row-low-stock {
+  background: rgba(226, 160, 63, 0.1);
+}
+
+.stock-mgmt-page .pos-stock-table tbody tr.row-out-of-stock {
+  background: rgba(231, 81, 90, 0.08);
+}
+
+.stock-mgmt-page .pos-stock-table-compact :is(th, td) {
+  padding: 0.25rem 0.375rem !important;
+}
+
+.stock-mgmt-page .pos-stitch-control {
+  background: var(--stock-surface) !important;
+  border: 1px solid var(--stock-border) !important;
+  border-radius: 9999px !important;
+  color: var(--stock-text) !important;
+}
+
+.stock-mgmt-page .pos-stitch-control:focus {
+  border-color: var(--stock-primary) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--stock-primary-light);
+}
+
+.stock-mgmt-page .pos-stitch-control::placeholder {
+  color: var(--stock-text-secondary);
+}
+
+.stock-mgmt-page .pos-stitch-table-head {
+  background: var(--stock-surface-muted);
+  color: var(--stock-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stock-mgmt-page .stock-tab-inactive {
+  color: var(--stock-muted);
+}
+
+.stock-mgmt-page .stock-tab-inactive:hover {
+  color: var(--stock-primary);
+}
+
+.stock-mgmt-page .stock-period-inactive {
+  background: var(--stock-surface-muted);
+  color: var(--stock-muted);
+}
+
+.stock-mgmt-page .stock-period-inactive:hover {
+  background: var(--stock-primary-light);
+  color: var(--stock-primary-dark);
+}
+
+.dark .stock-mgmt-page .stock-period-inactive:hover {
+  color: var(--stock-primary);
+}
+
+.stock-mgmt-page .stock-stitch-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.75rem;
+  width: 1.75rem;
+  shrink: 0;
+  padding: 0;
+  border: 1px solid var(--stock-border);
+  background: transparent;
+  border-radius: 0.375rem;
+  color: var(--stock-text);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.stock-mgmt-page .stock-stitch-btn-outline:hover {
+  background: var(--stock-primary-light);
+  border-color: color-mix(in srgb, var(--stock-primary) 40%, var(--stock-border));
+  color: var(--stock-primary-dark);
+}
+
+.dark .stock-mgmt-page .stock-stitch-btn-outline:hover {
+  color: var(--stock-primary);
+}
+
+.stock-mgmt-page .stock-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 2rem;
+  padding: 0 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid var(--stock-border-strong);
+  border-radius: 0.375rem;
+  background: var(--stock-surface-elevated);
+  color: var(--stock-text);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.stock-mgmt-page .stock-import-btn:hover:not(:disabled) {
+  background: var(--stock-primary-light);
+  border-color: color-mix(in srgb, var(--stock-primary) 35%, var(--stock-border));
+  color: var(--stock-primary-dark);
+}
+
+.stock-mgmt-page .stock-import-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dark .stock-mgmt-page .stock-import-btn:hover:not(:disabled) {
+  color: var(--stock-primary);
+}
+

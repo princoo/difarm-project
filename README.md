@@ -1,40 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# DiFarm (Next.js + API)
 
-## Getting Started
+Farm management app — **everything runs from this folder** (`difarm-next`). Do not use a separate `Difarm-Be-main` checkout.
 
-First, run the development server:
+- **Frontend**: Next.js 15 (Pages Router) on port **3003**
+- **API**: Express + Prisma in `backend/` on port **4000**
+- **Database**: Prisma schema in `prisma/`
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Getting started
+
+```powershell
+cd c:\Users\unipod\Downloads\difar\difarm-next
+npm run setup      # first time only (installs deps + generates Prisma client)
+npm run db:push    # sync database schema (stop dev servers first)
+npm run seed       # optional: default login users
+npm run dev        # starts API + Next.js together
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3003** in your browser (not port 4000 — that is the API only).
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+All settings live in `.env` in this folder (database, API, frontend).
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+```
+PORT=4000
+FRONTEND_URL=http://localhost:3003
+NEXT_PUBLIC_SERVER_URL=http://localhost:4000
+DATABASE_URL=postgresql://...
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Database seed (default login users)
 
-## Learn More
+From this folder:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run seed
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+Default dashboard logins after seed (all use the same password):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Email | Password | Role |
+|-------|----------|------|
+| `superadmin@difarm.com` | `Difarm123` | Super Admin |
+| `admin@difarm.com` | `Difarm123` | Admin |
+| `manager@difarm.com` | `Difarm123` | Manager |
 
-## Deploy on Vercel
+## Routes (same as original)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Path | Page |
+|------|------|
+| `/` | Redirects to `/home` |
+| `/home` | Landing page |
+| `/login` | Login |
+| `/choose-farm` | Farm selection |
+| `/account` | Dashboard overview |
+| `/account/*` | Farms, users, cattle, production, stock, health, etc. |
+| `/stock` | Stock dashboard |
+| `/stock/suppliers`, `/stock/items` | Stock modules |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## Project layout
+
+```
+difarm-next/
+├── backend/          # Express API (runs via npm run dev:api)
+├── prisma/           # Database schema + seed
+├── scripts/          # dev-all, run-api, setup, etc.
+├── src/
+│   ├── app/          # Page components
+│   ├── components/   # Shared UI components
+│   ├── hooks/api/    # API hooks
+│   ├── lib/          # router-compat + utilities
+│   ├── pages/        # Next.js routes
+│   └── store/        # Redux store
+└── public/           # Static assets
+```
+
+## Scripts
+
+- `npm run dev` — API + Next.js (recommended)
+- `npm run dev:web` — Next.js only (port 3003)
+- `npm run dev:api` — API only (port 4000)
+- `npm run setup` — install all dependencies
+- `npm run db:push` / `npm run db:generate` — Prisma
+- `npm run seed` — create default dashboard users
+- `npm run build` — production build
+- `npm run start` — run production build
+
+## Notes
+
+- Uses `--legacy-peer-deps` for some peer dependency mismatches from the original stack.
+- Image optimization is disabled (`images.unoptimized`) to keep `<img>` tags working as in the original app.

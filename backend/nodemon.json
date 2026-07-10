@@ -1,0 +1,8 @@
+{
+  "watch": ["src", "server.ts"],
+  "ext": "ts,json",
+  "exec": "ts-node --transpile-only server.ts",
+  "events": {
+    "restart": "node ./scripts/free-port.cjs 4000"
+  }
+}

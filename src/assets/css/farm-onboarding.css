@@ -1,0 +1,57 @@
+.farm-onboarding-steps {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.farm-onboarding-step {
+  flex: 1;
+  min-width: 4.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e5e7eb;
+  opacity: 0.65;
+  transition: all 0.2s ease;
+}
+
+.dark .farm-onboarding-step {
+  background: rgba(17, 17, 17, 0.8);
+  border-color: #374151;
+}
+
+.farm-onboarding-step.is-active {
+  opacity: 1;
+  border-color: #4bc2c2;
+  box-shadow: 0 0 0 2px rgba(75, 194, 194, 0.25);
+}
+
+.farm-onboarding-step.is-done {
+  opacity: 1;
+  border-color: #4bc2c2;
+}
+
+.farm-onboarding-step.is-done .farm-onboarding-step-icon {
+  background: #4bc2c2;
+  color: white;
+}
+
+.farm-onboarding-step-icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: grid;
+  place-content: center;
+  background: #e8f5f4;
+  color: #2d8a8a;
+}
+
+.farm-onboarding-card {
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(75, 194, 194, 0.08);
+}
