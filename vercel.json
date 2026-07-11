@@ -8,10 +8,33 @@
       "maxDuration": 30
     }
   },
+  "services": {
+    "frontend": {
+        "root": ".",
+        "framework": "nextjs"
+    },
+    "backend": {
+        "root": "backend"
+    }
+},
   "rewrites": [
     {
       "source": "/uploads/(.*)",
       "destination": "/api/uploads/$1"
-    }
+    },
+    {
+      "source": "/api/backend(/.*)?",
+      "destination": {
+          "type": "service",
+          "service": "backend"
+      }
+  },
+  {
+      "source": "/(.*)",
+      "destination": {
+          "type": "service",
+          "service": "frontend"
+      }
+  }
   ]
 }
