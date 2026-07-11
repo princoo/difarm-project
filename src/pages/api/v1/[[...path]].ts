@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { Express } from 'express';
 
 export const config = {
   api: {
@@ -7,31 +8,17 @@ export const config = {
   },
 };
 
-type ServerlessHandler = (
-  req: NextApiRequest,
-  res: NextApiResponse
-) => Promise<unknown>;
-
-let cached: ServerlessHandler | null = null;
+let cachedApp: Express | null = null;
 let initError: Error | null = null;
 
-async function getHandler(): Promise<ServerlessHandler> {
+async function getApp(): Promise<Express> {
   if (initError) throw initError;
-  if (cached) return cached;
+  if (cachedApp) return cachedApp;
   try {
     // Dynamic import so module-load failures become JSON 500s, not Next HTML 500.
     const { createApp } = await import('../../../../backend/src/createApp');
-    const serverless = (await import('serverless-http')).default;
-    const app = createApp();
-    cached = serverless(app, {
-      binary: [
-        'image/*',
-        'application/pdf',
-        'application/octet-stream',
-        'multipart/form-data',
-      ],
-    }) as unknown as ServerlessHandler;
-    return cached;
+    cachedApp = createApp();
+    return cachedApp;
   } catch (err) {
     initError = err instanceof Error ? err : new Error(String(err));
     console.error('[api/v1] createApp failed:', initError);
@@ -56,6 +43,7 @@ function normalizeUrl(req: NextApiRequest) {
 
 /**
  * Catch-all for remaining /api/v1/* routes (login/health have dedicated pages).
+ * Express is invoked directly — serverless-http is for Lambda events, not Next req/res.
  */
 export default async function handler(
   req: NextApiRequest,
@@ -70,8 +58,8 @@ export default async function handler(
       });
     }
     normalizeUrl(req);
-    const run = await getHandler();
-    await run(req, res);
+    const app = await getApp();
+    app(req, res);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'API failed to start';
     console.error('[api/v1] handler error:', err);

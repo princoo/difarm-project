@@ -30,7 +30,9 @@ if (typeof express !== 'function') {
   );
 }
 
-export const Router = express.Router.bind(express) as typeof express.Router;
+// Do NOT use express.Router.bind(...) — Express maps HTTP method "bind" (WebDAV)
+// onto Router, so .bind is a route registrar, not Function.prototype.bind.
+export const Router = express.Router;
 
 export type {
   Request,

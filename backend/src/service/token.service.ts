@@ -48,21 +48,14 @@ const generateForgotPasswordToken = (data: { email: string; id: string }) => {
 };
 
 const verifyToken = (token: string, type: string): any => {
-  if (type === 'verify-email') {
-    return Jwt.verify(token, jwtVerifSecret(), (err, decoded) => {
-      if (err) {
-        return err;
-      }
-      return decoded;
-    });
-  }
-
-  return Jwt.verify(token, jwtSecret(), (err, decoded) => {
-    if (err) {
-      return err;
+  try {
+    if (type === 'verify-email') {
+      return Jwt.verify(token, jwtVerifSecret());
     }
-    return decoded;
-  });
+    return Jwt.verify(token, jwtSecret());
+  } catch {
+    return null;
+  }
 };
 
 export {
