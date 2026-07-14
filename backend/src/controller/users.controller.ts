@@ -1,10 +1,7 @@
 import { Request, Response } from "express";
 import ResponseHandler from "../util/responseHandler";
 import prisma from "../db/prisma";
-import { Farm, Roles } from "@prisma/client";
-import { UserI } from "../interface/user.interface";
-import { AccountI } from "../interface/account.interface";
-import farmService from "../service/farm.service";
+import { Roles } from "@prisma/client";
 import { StatusCodes } from "http-status-codes";
 import { paginate } from "../util/paginate";
 import { asNumber, asString } from "../util/requestParam";
@@ -313,24 +310,69 @@ export const updateAccount = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
   const userId = asString(req.params.userId);
+  const actionUser = req.actionUser;
+  const accountId = actionUser?.accountId as string | undefined;
+  const requestUser = (req as any).user?.data;
+
+  if (!userId || !accountId) {
+    responseHandler.setError(StatusCodes.BAD_REQUEST, "User id is required");
+    return responseHandler.send(res);
+  }
+
+  if (actionUser?.account?.role === Roles.SUPERADMIN) {
+    responseHandler.setError(
+      StatusCodes.FORBIDDEN,
+      "Super admin accounts cannot be deleted."
+    );
+    return responseHandler.send(res);
+  }
+
+  if (requestUser?.userId === userId || requestUser?.id === accountId) {
+    responseHandler.setError(
+      StatusCodes.FORBIDDEN,
+      "You cannot delete your own account."
+    );
+    return responseHandler.send(res);
+  }
 
   try {
-    await Promise.all([
-      prisma.user.delete({
-        where: { id: userId },
-      }),
-      prisma.account.delete({
-        where: { id: req.actionUser.accountId },
-      }),
-    ]);
-    if (req.actionUser.account.role == Roles.MANAGER) {
-      const data = await farmService.removeManagerFromFarm(req.actionUser.id);
-    }
+    await prisma.$transaction(
+      async (tx) => {
+        // Activity logs block account delete (no onDelete Cascade)
+        await tx.activityLog.deleteMany({ where: { accountId } });
+
+        // Clear farm ownership / legacy manager pointer
+        await tx.farm.updateMany({
+          where: { ownerId: userId },
+          data: { ownerId: null },
+        });
+        await tx.farm.updateMany({
+          where: { managerId: userId },
+          data: { managerId: null },
+        });
+
+        await tx.farmManager.deleteMany({ where: { userId } });
+
+        // Detach veterinarian profile if linked to this account
+        await tx.veterinarian.updateMany({
+          where: { accountId },
+          data: { accountId: null },
+        });
+
+        await tx.user.delete({ where: { id: userId } });
+        await tx.account.delete({ where: { id: accountId } });
+      },
+      { maxWait: 15_000, timeout: 60_000 }
+    );
+
     responseHandler.setSuccess(200, "User deleted successfully", null);
-    responseHandler.send(res);
+    return responseHandler.send(res);
   } catch (error) {
-    console.log(error);
-    responseHandler.setError(400, "Error deleting user");
-    responseHandler.send(res);
+    console.error("Error deleting user:", error);
+    responseHandler.setError(
+      StatusCodes.BAD_REQUEST,
+      "Error deleting user. Related records may still be linked to this account."
+    );
+    return responseHandler.send(res);
   }
 };

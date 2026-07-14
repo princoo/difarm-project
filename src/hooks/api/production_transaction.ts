@@ -1,87 +1,153 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { api, queryString } from '.';
+import { getFarmId, getReadFarmScope } from '@/utils/farmId';
+import { isLoggedIn } from '@/hooks/api/auth';
 
-interface ProductionTransactionData {
-    productionId: string;
-    quantity: number;
-    type: 'IN' | 'OUT'; 
-}
+export type DailySaleRow = {
+  id: string;
+  farmId: string;
+  farmName?: string;
+  date: string;
+  productType: string;
+  produced: number;
+  sold: number;
+  remaining: number;
+  saleValue: number;
+  amountPaid: number;
+  unpaid: number;
+  pricePerUnit: number;
+};
 
 export const useProductionTransaction = () => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [production_transactions, setProductionTransactions] = useState([]);
-const FarmId =  localStorage.getItem('FarmId')
-    const getProductionTransactions = async (query?:string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await api.get(`/production-transaction/${FarmId}?${queryString(query)}`);
-            setProductionTransactions(response.data);
-        } catch (error: any) {
-            const errorMessage =
-                error.response?.data?.message ||
-                'An error occurred while fetching production transactions.';
-            toast.error(errorMessage);
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [production_transactions, setProductionTransactions] = useState<any>(
+    []
+  );
+  const [dailySales, setDailySales] = useState<DailySaleRow[]>([]);
 
-    const createProductionTransaction = async (data:any) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await api.post(`/production-transaction/${FarmId}`, data);
-            toast.success('Production transaction created successfully');
-            return response.data;
-        } catch (error: any) {
-            const errorMessage =
-                error.response?.data?.message ||
-                'An error occurred while creating the production transaction.';
-            toast.error(errorMessage);
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const getProductionTransactions = async (query?: string) => {
+    const farmId = getReadFarmScope(isLoggedIn()?.role);
+    if (!farmId) {
+      setProductionTransactions([] as any);
+      setError(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get(
+        `/production-transaction/${farmId}?${queryString(query)}`
+      );
+      setProductionTransactions(response.data);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred while fetching sales.';
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const updateProductionTransaction = async (id: string, data: ProductionTransactionData) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await api.patch(`/production-transaction/${id}`, data);
-            toast.success('Production transaction updated successfully');
-            return response.data;
-        } catch (error: any) {
-            const errorMessage =
-                error.response?.data?.message ||
-                'An error occurred while updating the production transaction.';
-            toast.error(errorMessage);
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const getDailySales = async () => {
+    const farmId = getReadFarmScope(isLoggedIn()?.role);
+    if (!farmId) {
+      setDailySales([]);
+      setError(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get(`/production-transaction/${farmId}/daily`);
+      // Axios body: { status, message, data: { data: rows, total, ... } }
+      const rows = response.data?.data?.data ?? response.data?.data ?? [];
+      setDailySales(Array.isArray(rows) ? rows : []);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred while fetching daily sales.';
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const deleteProductionTransaction = async (id: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            await api.delete(`/production-transaction/${id}`);
-            toast.success('Production transaction deleted successfully');
-        } catch (error: any) {
-            const errorMessage =
-                error.response?.data?.message ||
-                'An error occurred while deleting the production transaction.';
-            toast.error(errorMessage);
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const createProductionTransaction = async (data: any) => {
+    const farmId = getFarmId();
+    if (!farmId) {
+      toast.error('Select a specific farm before recording a sale.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.post(
+        `/production-transaction/${farmId}`,
+        data
+      );
+      toast.success('Sale recorded successfully');
+      return response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred while recording the sale.';
+      toast.error(errorMessage);
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return { production_transactions, getProductionTransactions, createProductionTransaction, updateProductionTransaction, deleteProductionTransaction, loading, error };
+  const updateProductionTransaction = async (id: string, data: any) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.patch(`/production-transaction/${id}`, data);
+      toast.success('Sale updated successfully');
+      return response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred while updating the sale.';
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteProductionTransaction = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/production-transaction/${id}`);
+      toast.success('Sale deleted successfully');
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred while deleting the sale.';
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    production_transactions,
+    dailySales,
+    getProductionTransactions,
+    getDailySales,
+    createProductionTransaction,
+    updateProductionTransaction,
+    deleteProductionTransaction,
+    loading,
+    error,
+  };
 };

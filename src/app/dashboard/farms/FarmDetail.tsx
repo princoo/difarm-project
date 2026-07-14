@@ -23,7 +23,7 @@ export default function FarmDetail() {
   const { farm, loading: farmLoading, error: farmError } = useGetFarmById(farmId ?? "");
 
   const [activeMainTab, setActiveMainTab] = useState<"cattle" | "production" | "health">("cattle");
-  const [productionSubTab, setProductionSubTab] = useState<"list" | "totals" | "transactions">("list");
+  const [productionSubTab, setProductionSubTab] = useState<"list" | "sales">("list");
   const [healthSubTab, setHealthSubTab] = useState<"vaccination" | "insemination" | "veterinarians">("vaccination");
 
   const [cattle, setCattle] = useState<any>({ data: [] });
@@ -93,16 +93,12 @@ export default function FarmDetail() {
     { title: "Expiration", accessor: "expirationDate", render: (row) => <p>{row?.expirationDate ? formatDateToLongForm(row.expirationDate) : "—"}</p> },
   ];
 
-  const totalsColumns: TableColumnV2<any>[] = [
-    { title: "Product Type", accessor: "productType", render: (row) => <p>{row?.productType}</p> },
-    { title: "Total Quantity", accessor: "totalQuantity", render: (row) => <p>{row?.totalQuantity}</p> },
-    { title: "Price/Unit", accessor: "pricePerUnit", render: (row) => <p>{row?.pricePerUnit ?? "—"}</p> },
-  ];
-
   const transactionColumns: TableColumnV2<any>[] = [
     { title: "Product", accessor: "productType", render: (row) => <p>{row?.productType}</p> },
-    { title: "Quantity", accessor: "quantity", render: (row) => <p>{row?.quantity}</p> },
-    { title: "Date", accessor: "transactionDate", render: (row) => <p>{row?.transactionDate ? formatDateToLongForm(row.transactionDate) : "—"}</p> },
+    { title: "Quantity sold", accessor: "quantity", render: (row) => <p>{row?.quantity}</p> },
+    { title: "Sale value", accessor: "value", render: (row) => <p>{row?.value ?? "—"}</p> },
+    { title: "Buyer", accessor: "consumer", render: (row) => <p>{row?.consumer ?? "—"}</p> },
+    { title: "Date", accessor: "date", render: (row) => <p>{row?.date ? formatDateToLongForm(row.date) : "—"}</p> },
   ];
 
   const vaccinationColumns: TableColumnV2<any>[] = [
@@ -265,7 +261,7 @@ export default function FarmDetail() {
           {activeMainTab === "production" && (
             <>
               <div className="flex gap-2 mb-4">
-                {(["list", "totals", "transactions"] as const).map((sub) => (
+                {(["list", "sales"] as const).map((sub) => (
                   <button
                     key={sub}
                     type="button"
@@ -274,42 +270,53 @@ export default function FarmDetail() {
                       productionSubTab === sub ? "bg-primary text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                     }`}
                   >
-                    {sub === "list" ? "Production" : sub === "totals" ? "Totals" : "Transactions"}
+                    {sub === "list" ? "Overview" : "Sales"}
                   </button>
                 ))}
               </div>
               {productionSubTab === "list" && (
-                <DataTableV2
-                  columns={productionColumns}
-                  data={productions}
-                  isLoading={dataLoading}
-                  tableName="Production"
-                  currentPage={1}
-                  total={productions.length}
-                  lastPage={1}
-                  previousPage={0}
-                  nextPage={0}
-                />
+                <>
+                  {productionTotals.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                      {productionTotals.map((row: any) => (
+                        <div
+                          key={row.id}
+                          className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            {row.productType}
+                          </p>
+                          <p className="text-2xl font-bold mt-1">{row.totalQuantity ?? 0}</p>
+                          <p className="text-xs text-gray-500">Stock on hand</p>
+                          <p className="text-sm mt-2">
+                            Sale price:{" "}
+                            {row.pricePerUnit != null
+                              ? `${Number(row.pricePerUnit).toLocaleString()} / unit`
+                              : "Not set"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <DataTableV2
+                    columns={productionColumns}
+                    data={productions}
+                    isLoading={dataLoading}
+                    tableName="Production"
+                    currentPage={1}
+                    total={productions.length}
+                    lastPage={1}
+                    previousPage={0}
+                    nextPage={0}
+                  />
+                </>
               )}
-              {productionSubTab === "totals" && (
-                <DataTableV2
-                  columns={totalsColumns}
-                  data={productionTotals}
-                  isLoading={dataLoading}
-                  tableName="Production totals"
-                  currentPage={1}
-                  total={productionTotals.length}
-                  lastPage={1}
-                  previousPage={0}
-                  nextPage={0}
-                />
-              )}
-              {productionSubTab === "transactions" && (
+              {productionSubTab === "sales" && (
                 <DataTableV2
                   columns={transactionColumns}
                   data={productionTransactions}
                   isLoading={dataLoading}
-                  tableName="Production transactions"
+                  tableName="Sales"
                   currentPage={1}
                   total={productionTransactions.length}
                   lastPage={1}

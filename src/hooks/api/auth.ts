@@ -30,7 +30,7 @@ export const useLogin = () => {
             const errorMessage =
                 error.response?.data?.message ||
                 (error.request && !error.response
-                    ? 'Cannot reach the API. Check that the app finished deploying and try again.'
+                    ? 'Cannot reach the API. If you are on localhost, restart npm run dev after clearing NEXT_PUBLIC_SERVER_URL (do not use port 4000).'
                     : 'An error occurred during login.');
             toast.error(errorMessage);
             setLoginError(errorMessage);

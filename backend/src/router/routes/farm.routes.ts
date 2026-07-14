@@ -40,8 +40,8 @@ router.patch(
   activateFarm
 );
 router.delete(
-  "/:id",
-  checkRole([Roles.ADMIN, Roles.MANAGER]),
+  "/:farmId",
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   deleteFarm
 );

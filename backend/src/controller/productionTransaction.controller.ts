@@ -8,6 +8,7 @@ import { Roles } from "@prisma/client";
 import prisma from "../db/prisma";
 import { paginate } from "../util/paginate";
 import { asNumber, asString } from "../util/requestParam";
+import { ALL_FARMS_SCOPE } from "../util/farmScope";
 
 const responseHandler = new ResponseHandler();
 
@@ -17,21 +18,78 @@ const addTransaction = async (
   _next: NextFunction
 ) => {
   const farmId = asString(req.params.farmId);
-  const { quantity, productType } = req.body;
+  const { quantity, productType, date, consumer, amountPaid } = req.body;
   const amountValue = quantity * req.productInfo?.pricePerUnit!;
+  const daily = (req as any).dailyInfo as
+    | { produced: number; sold: number; remaining: number }
+    | undefined;
+
+  const paid =
+    amountPaid === undefined || amountPaid === null
+      ? amountValue
+      : Math.min(Number(amountPaid), amountValue);
+
   const body: ProdTransactionBody = {
-    ...req.body,
     farmId,
-    value: amountValue,
     productType,
-    total: req.productInfo?.totalQuantity,
+    quantity,
+    consumer,
+    date,
+    value: amountValue,
+    amountPaid: paid,
+    // Snapshot day's produced total for this sale row
+    total: daily?.produced ?? req.productInfo?.totalQuantity ?? 0,
   };
+
   const data = await productionTransactionService.recordTransaction(body);
   responseHandler.setSuccess(
     StatusCodes.CREATED,
-    "transaction recorded successfully",
+    "Sale recorded successfully",
     data
   );
+  return responseHandler.send(res);
+};
+
+const dailySales = async (req: Request, res: Response, _next: NextFunction) => {
+  const farmId = asString(req.params.farmId);
+  const user = (req as any).user.data;
+
+  try {
+    if (
+      farmId === ALL_FARMS_SCOPE &&
+      user.role !== Roles.SUPERADMIN
+    ) {
+      responseHandler.setError(
+        StatusCodes.FORBIDDEN,
+        "You do not have permission to view all farms."
+      );
+      return responseHandler.send(res);
+    }
+
+    const rows = await productionTransactionService.getDailySales(
+      farmId,
+      user.role
+    );
+
+    responseHandler.setSuccess(
+      StatusCodes.OK,
+      "Daily production sales retrieved successfully.",
+      {
+        data: rows,
+        total: rows.length,
+        currentPage: 1,
+        totalPages: 1,
+        previousPage: 0,
+        nextPage: 0,
+      }
+    );
+  } catch (error) {
+    console.error("Error retrieving daily sales:", error);
+    responseHandler.setError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "An error occurred while retrieving daily sales."
+    );
+  }
   return responseHandler.send(res);
 };
 
@@ -54,10 +112,14 @@ const allTransactions = async (
     let transactions: any;
 
     if (user.role === Roles.SUPERADMIN) {
+      const where =
+        farmId && farmId !== ALL_FARMS_SCOPE ? { farmId } : {};
       transactions = await prisma.productionTransaction.findMany({
+        where,
         include: { farm: true },
         skip,
         take,
+        orderBy: { date: "desc" },
       });
     } else if (user.role === Roles.ADMIN || user.role === Roles.MANAGER) {
       transactions = await prisma.productionTransaction.findMany({
@@ -65,13 +127,22 @@ const allTransactions = async (
         include: { farm: true },
         skip,
         take,
+        orderBy: { date: "desc" },
       });
     } else {
-      responseHandler.setError(StatusCodes.FORBIDDEN, 'You do not have permission to view production transaction record.');
+      responseHandler.setError(
+        StatusCodes.FORBIDDEN,
+        "You do not have permission to view production transaction record."
+      );
       return responseHandler.send(res);
     }
     const totalCount = await prisma.productionTransaction.count({
-      where: user.role === Roles.ADMIN || user.role === Roles.MANAGER ? { farmId } : {},
+      where:
+        user.role === Roles.ADMIN || user.role === Roles.MANAGER
+          ? { farmId }
+          : farmId && farmId !== ALL_FARMS_SCOPE
+            ? { farmId }
+            : {},
     });
 
     const paginationResult = paginate(
@@ -120,7 +191,6 @@ const updateTransactions = async (
   const { quantity } = req.body;
 
   if (quantity) {
-    console.log(req.transaction.quantity, quantity);
     const updatedQuantity = req.transaction.quantity - quantity;
     const productInfo = await productionTotalsService.prodInfo(
       farmId,
@@ -153,6 +223,7 @@ const updateTransactions = async (
   );
   return responseHandler.send(res);
 };
+
 const removeTransactions = async (
   req: Request,
   res: Response,
@@ -172,6 +243,7 @@ const removeTransactions = async (
 
 export default {
   addTransaction,
+  dailySales,
   allTransactions,
   singleTransactions,
   updateTransactions,

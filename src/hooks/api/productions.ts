@@ -20,7 +20,8 @@ const [productions, setProductions] = useState([]);
  const getProductions = async (query?:string) => {
     const farmId = getReadFarmScope(isLoggedIn()?.role);
     if (!farmId) {
-        setError('No farm selected.');
+        setProductions([] as any);
+        setError(null);
         return;
     }
     setLoading(true);

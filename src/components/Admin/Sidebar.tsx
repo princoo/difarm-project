@@ -63,27 +63,10 @@ const Sidebar = () => {
     },
     {
       name: "Production",
-      to: "",
+      to: "/account/production",
       icon: FaSwatchbook,
       current: location.pathname.startsWith("/account/production"),
       roles: ["SUPERADMIN", "ADMIN", "MANAGER"],
-      children: [
-        {
-          name: "Production Overview",
-          to: "/account/production",
-          current: location.pathname === "/account/production",
-        },
-        {
-          name: "Production Totals",
-          to: "/account/production_totals",
-          current: location.pathname === "/account/production_totals",
-        },
-        {
-          name: "Production Transactions",
-          to: "/account/production_transactions",
-          current: location.pathname === "/account/production_transactions",
-        },
-      ],
     },
     {
       name: "Waste Production",
@@ -240,8 +223,9 @@ const ItemDropDown: React.FC<ItemDropDownProps> = ({
   toggleMenu,
   item,
 }) => {
+  // Root must not be <li> — Sidebar already wraps each nav item in <li>
   return (
-    <li className="menu nav-item">
+    <div className="menu nav-item">
       <button
         type="button"
         className={`nav-link group w-full ${
@@ -288,6 +272,6 @@ const ItemDropDown: React.FC<ItemDropDownProps> = ({
           ))}
         </ul>
       </AnimateHeight>
-    </li>
+    </div>
   );
 };

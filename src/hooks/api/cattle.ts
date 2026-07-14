@@ -51,7 +51,7 @@ export const useCattle = () => {
   };
 
   const addCattle = async (cattleData: any) => {
-    const farmId = getFarmId();
+    const farmId = cattleData?.farmId || getFarmId();
     if (!farmId) {
       toast.error("No farm selected. Choose a farm first.");
       return false;

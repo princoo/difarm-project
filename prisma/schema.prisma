@@ -184,9 +184,14 @@ model ProductionTransaction {
   id              String   @id @default(uuid())
   farmId          String
   productType     ProductType
+  /// Snapshot of that day's produced quantity (or stock) at sale time
   total           Float
   quantity        Float
+  /// Expected sale amount (quantity × pricePerUnit)
   value           Float
+  /// Amount actually paid; null = treat as fully paid (legacy rows)
+  amountPaid      Float?
+  /// Production day this sale is deducted from
   date            DateTime  @default(now())
   consumer        String
   createdAt       DateTime @default(now())
@@ -195,6 +200,7 @@ model ProductionTransaction {
   farm            Farm     @relation(fields: [farmId], references: [id])
 
   @@index([farmId])
+  @@index([farmId, productType, date])
 }
 
 model ProductionTotals {

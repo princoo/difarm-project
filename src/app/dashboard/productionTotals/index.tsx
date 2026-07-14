@@ -13,6 +13,7 @@ import UpdateProductionTransactionModal from './updatePrice';
 import { useSearchParams } from '@/lib/router-compat';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { canUpdateEntity } from '@/utils/permissions';
+import ProductionTabs from '../production/ProductionTabs';
 
 const ProductionTotals = () => {
     const [searchParams] = useSearchParams();
@@ -85,11 +86,12 @@ const ProductionTotals = () => {
                 </li>
                 <li className="before:content-['/'] before:px-1.5">
                     <button className="text-black dark:text-white-light hover:text-black/70 dark:hover:text-white-light/70">
-                        Production Totals
+                        Production
                     </button>
                 </li>
             </ol>
-           
+
+            <ProductionTabs />
 
            
             <UpdateProductionTransactionModal

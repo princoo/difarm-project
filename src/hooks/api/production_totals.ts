@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { api, queryString } from '.';
+import { getFarmId, getReadFarmScope } from '@/utils/farmId';
+import { isLoggedIn } from '@/hooks/api/auth';
 
 interface ProductionTransactionData {
     productionId: string;
@@ -13,18 +15,25 @@ export const useProductionTransaction = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [production_transactions, setProductionTransactions] = useState([]);
-    const FarmId = localStorage.getItem('FarmId');
 
-    const getProductionTransactions = async (query?:string) => {
+    const getProductionTransactions = async (query?: string) => {
+        const farmId = getReadFarmScope(isLoggedIn()?.role);
+        if (!farmId) {
+            setProductionTransactions([] as any);
+            setError(null);
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
-            const response = await api.get(`/production-totals/${FarmId}?${queryString(query)}`);
+            const response = await api.get(
+                `/production-totals/${farmId}?${queryString(query)}`
+            );
             setProductionTransactions(response.data);
         } catch (error: any) {
             const errorMessage =
                 error.response?.data?.message ||
-                'An error occurred while fetching production transactions.';
+                'An error occurred while fetching production totals.';
             toast.error(errorMessage);
             setError(errorMessage);
         } finally {
@@ -33,16 +42,21 @@ export const useProductionTransaction = () => {
     };
 
     const createProductionTransaction = async (data: ProductionTransactionData) => {
+        const farmId = getFarmId();
+        if (!farmId) {
+            toast.error('Select a specific farm before recording production totals.');
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
-            const response = await api.post(`/production-totals/${FarmId}`, data);
-            toast.success('Production transaction created successfully');
+            const response = await api.post(`/production-totals/${farmId}`, data);
+            toast.success('Production totals updated successfully');
             return response.data;
         } catch (error: any) {
             const errorMessage =
                 error.response?.data?.message ||
-                'An error occurred while creating the production transaction.';
+                'An error occurred while creating the production totals.';
             toast.error(errorMessage);
             setError(errorMessage);
         } finally {
@@ -50,17 +64,20 @@ export const useProductionTransaction = () => {
         }
     };
 
-    const updateProductionTransaction = async (id: string, data: ProductionTransactionData) => {
+    const updateProductionTransaction = async (
+        id: string,
+        data: ProductionTransactionData
+    ) => {
         setLoading(true);
         setError(null);
         try {
             const response = await api.patch(`/production-totals/${id}`, data);
-            toast.success('Production transaction updated successfully');
+            toast.success('Production totals updated successfully');
             return response.data;
         } catch (error: any) {
             const errorMessage =
                 error.response?.data?.message ||
-                'An error occurred while updating the production transaction.';
+                'An error occurred while updating the production totals.';
             toast.error(errorMessage);
             setError(errorMessage);
         } finally {
@@ -73,11 +90,11 @@ export const useProductionTransaction = () => {
         setError(null);
         try {
             await api.delete(`/production-totals/${id}`);
-            toast.success('Production transaction deleted successfully');
+            toast.success('Production totals deleted successfully');
         } catch (error: any) {
             const errorMessage =
                 error.response?.data?.message ||
-                'An error occurred while deleting the production transaction.';
+                'An error occurred while deleting the production totals.';
             toast.error(errorMessage);
             setError(errorMessage);
         } finally {
@@ -85,13 +102,13 @@ export const useProductionTransaction = () => {
         }
     };
 
-    return { 
-        production_transactions, 
-        getProductionTransactions, 
-        createProductionTransaction, 
-        updateProductionTransaction, 
-        deleteProductionTransaction, 
-        loading, 
-        error 
+    return {
+        production_transactions,
+        getProductionTransactions,
+        createProductionTransaction,
+        updateProductionTransaction,
+        deleteProductionTransaction,
+        loading,
+        error,
     };
 };

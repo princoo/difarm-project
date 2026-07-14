@@ -118,16 +118,23 @@ export const useDeleteFarm = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const deleteFarm = async (id: string) => {
+    const deleteFarm = async (id: string): Promise<boolean> => {
         setLoading(true);
         setError(null);
         try {
             await api.delete(`/farms/${id}`);
             toast.success("Farm deleted successfully");
+            return true;
         } catch (error: any) {
+            // Farm already gone (e.g. prior delete succeeded) — treat as success
+            if (error.response?.status === 404) {
+                toast.success("Farm deleted successfully");
+                return true;
+            }
             const errorMessage = error.response?.data?.message || "An error occurred while deleting the farm.";
             toast.error(errorMessage);
             setError(errorMessage);
+            return false;
         } finally {
             setLoading(false);
         }

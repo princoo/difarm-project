@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { CattleReport } from './cattleReport.types';
 import { activityLabel, inferBirthOrigin, statusLabel } from './cattleStatus';
+import { cattlePlaceInfo } from './cattlePlace';
 
 const BRAND = {
   primary: [34, 139, 34] as [number, number, number],
@@ -285,8 +286,10 @@ export async function generateCattleReportPdf(report: CattleReport) {
     ['Date of birth', fmtDate(cattle.DOB)],
     ['Birth origin', inferBirthOrigin(cattle)],
     ['Mother tag', cattle.motherTag || '—'],
-    ['Farm', cattle.farm?.name || '—'],
-    ['Location', cattle.location || '—'],
+    ['Farm', cattlePlaceInfo(cattle).farmName],
+    ['Farm address', cattlePlaceInfo(cattle).farmAddress],
+    ['Farm coordinates', cattlePlaceInfo(cattle).farmCoords],
+    ['Cattle location', cattlePlaceInfo(cattle).cattleLocation],
     ['Purchase date', fmtDate(cattle.purchaseDate)],
     ['Purchase price', cattle.price != null ? `${cattle.price.toLocaleString()} RWF` : '—'],
     ['Previous owner', cattle.previousOwner || '—'],

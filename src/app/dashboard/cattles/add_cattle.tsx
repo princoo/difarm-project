@@ -1,16 +1,54 @@
 import { z } from "zod";
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { InputField } from "@/components/input";
 import { useCattle } from "@/hooks/api/cattle";
 import { Autocomplete } from "@mantine/core";
 import toast from "react-hot-toast";
-import { getFarmId } from "@/utils/farmId";
+import { getFarmId, setFarmId } from "@/utils/farmId";
+import { api } from "@/hooks/api";
+import { isLoggedIn } from "@/hooks/api/auth";
+import { filterFarmsForUser } from "@/utils/postLoginRouting";
 
 const hasFieldValue = (value: unknown) =>
   value != null && String(value).trim() !== "";
+
+type FarmDetails = {
+  id: string;
+  name?: string;
+  location?: string;
+  latitude?: string | null;
+  longitude?: string | null;
+  status?: boolean;
+  ownerId?: string | null;
+  managerId?: string | null;
+  managerLinks?: { userId: string }[];
+};
+
+function farmLocationDefault(farm: FarmDetails | null | undefined): string {
+  if (!farm) return "";
+  const lat = String(farm.latitude ?? "").trim();
+  const lng = String(farm.longitude ?? "").trim();
+  if (lat && lng) return `${lat}, ${lng}`;
+  return String(farm.location ?? "").trim();
+}
+
+function unwrapFarm(payload: unknown): FarmDetails | null {
+  if (!payload || typeof payload !== "object") return null;
+  const body = payload as { data?: unknown };
+  const data = body.data ?? payload;
+  if (!data || typeof data !== "object") return null;
+  const farm = data as FarmDetails;
+  return farm.id ? farm : null;
+}
+
+function unwrapFarms(payload: unknown): FarmDetails[] {
+  if (!payload || typeof payload !== "object") return [];
+  const body = payload as { data?: unknown };
+  return Array.isArray(body.data) ? (body.data as FarmDetails[]) : [];
+}
 
 const cattleSchema = z
   .object({
@@ -108,6 +146,8 @@ const cattleSchema = z
 
 const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
   const { addCattle, loading, error } = useCattle();
+  const [resolvedFarm, setResolvedFarm] = useState<FarmDetails | null>(null);
+  const [resolvingFarm, setResolvingFarm] = useState(false);
 
   const motherSuggestions = useMemo(
     () => (cattles ?? []).map((cattle: any) => String(cattle.tagNumber)),
@@ -124,29 +164,99 @@ const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
   } = useForm<z.infer<typeof cattleSchema>>({
     resolver: zodResolver(cattleSchema),
     defaultValues: {
-      tagNumber: '',
-      breed: '',
-      gender: '',
-      weight: '',
-      location: '',
-      lastCheckupDate: '',
-      birthOrigin: 'OnFarm',
+      tagNumber: "",
+      breed: "",
+      gender: "",
+      weight: "",
+      location: "",
+      lastCheckupDate: "",
+      birthOrigin: "OnFarm",
       purchaseDate: null,
       DOB: null,
       previousOwner: null,
-      motherTag: '',
+      motherTag: "",
       price: null,
     },
   });
 
   const birthOrigin = watch("birthOrigin");
   const motherTag = watch("motherTag");
-  const farmId = getFarmId();
 
   useEffect(() => {
     if (!isOpen) return;
-    reset();
-  }, [isOpen, reset]);
+
+    let cancelled = false;
+
+    const resolveFarmContext = async () => {
+      setResolvingFarm(true);
+      setResolvedFarm(null);
+      reset({
+        tagNumber: "",
+        breed: "",
+        gender: "",
+        weight: "",
+        location: "",
+        lastCheckupDate: "",
+        birthOrigin: "OnFarm",
+        purchaseDate: null,
+        DOB: null,
+        previousOwner: null,
+        motherTag: "",
+        price: null,
+      });
+
+      try {
+        const user = isLoggedIn();
+        let farmId = getFarmId();
+
+        // Admin / manager: if login farm was lost, restore from their assigned farms
+        if (!farmId && user?.role && user.role !== "SUPERADMIN") {
+          const response = await api.get("/farms");
+          const assigned = filterFarmsForUser(unwrapFarms(response.data), {
+            role: user.role,
+            userId: user.userId,
+          });
+          if (assigned.length === 1) {
+            farmId = assigned[0].id;
+            setFarmId(farmId);
+          } else if (assigned.length > 1) {
+            toast.error("Select a farm first (you have more than one).");
+            return;
+          }
+        }
+
+        if (!farmId) {
+          if (user?.role === "SUPERADMIN") {
+            toast.error("Select a farm from the dashboard filter first.");
+          } else {
+            toast.error("No farm selected. Choose a farm at login first.");
+          }
+          return;
+        }
+
+        const farmRes = await api.get(`/farms/farm/${farmId}`);
+        const farm = unwrapFarm(farmRes.data);
+        if (cancelled || !farm) return;
+
+        setResolvedFarm(farm);
+        const locationDefault = farmLocationDefault(farm);
+        if (locationDefault) {
+          setValue("location", locationDefault, { shouldValidate: true });
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error("Could not load the selected farm.");
+        }
+      } finally {
+        if (!cancelled) setResolvingFarm(false);
+      }
+    };
+
+    resolveFarmContext();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, reset, setValue]);
 
   useEffect(() => {
     if (birthOrigin === "OnFarm") {
@@ -169,6 +279,7 @@ const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
   };
 
   const onSubmit = async (data: any) => {
+    const farmId = resolvedFarm?.id || getFarmId();
     if (!farmId) {
       toast.error("No farm selected. Choose a farm first.");
       return;
@@ -246,7 +357,24 @@ const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
                   <div className="font-bold text-lg">Add New Cattle</div>
                 </div>
                 <div className="p-5">
-                  {error && <div className="text-red-500">{error}</div>}
+                  {error && <div className="text-red-500 mb-2">{error}</div>}
+                  {resolvingFarm && (
+                    <p className="text-sm text-gray-500 mb-3">
+                      Loading farm details…
+                    </p>
+                  )}
+                  {resolvedFarm && (
+                    <div className="mb-4 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900">
+                      <span className="font-semibold">Farm:</span>{" "}
+                      {resolvedFarm.name || "Selected farm"}
+                      {farmLocationDefault(resolvedFarm) ? (
+                        <span className="block text-xs text-teal-800 mt-0.5">
+                          Default location from farm registration:{" "}
+                          {farmLocationDefault(resolvedFarm)}
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                   <form
                     onSubmit={handleSubmit(onSubmit, onInvalid)}
                     className="grid grid-cols-2  gap-2 "
@@ -403,10 +531,14 @@ const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
                         type="text"
                         registration={register("location")}
                         label="Location"
-                        placeholder="Enter location"
+                        placeholder="Farm coordinates or place"
                         name="location"
                         error={errors.location?.message}
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Prefills from the farm’s registered coordinates when
+                        available.
+                      </p>
                     </div>
 
                     <div className="mb-4">
@@ -430,7 +562,7 @@ const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
                       <button
                         type="submit"
                         className="btn btn-primary ltr:ml-4 rtl:mr-4"
-                        disabled={loading}
+                        disabled={loading || resolvingFarm || !resolvedFarm}
                       >
                         {loading ? "Saving..." : "Save"}
                       </button>

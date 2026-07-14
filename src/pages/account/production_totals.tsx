@@ -1,9 +1,14 @@
-import { ReactElement } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { withAdminLayout } from '@/components/Admin/withAdminLayout';
-import ProductionTotals from '@/app/dashboard/productionTotals';
+import { useNavigate } from '@/lib/router-compat';
 
+/** Totals now live on Production Overview — keep this route as a redirect. */
 function AccountProductionTotalsPage() {
-  return <ProductionTotals />;
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate('/account/production', { replace: true });
+  }, [navigate]);
+  return null;
 }
 
 AccountProductionTotalsPage.getLayout = (page: ReactElement) => withAdminLayout(page);

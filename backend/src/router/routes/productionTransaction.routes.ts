@@ -1,4 +1,4 @@
-import { Router } from '../../util/cjsDeps';
+import { Router } from "../../util/cjsDeps";
 import { Roles } from "@prisma/client";
 import asyncWrapper from "../../util/asyncWrapper";
 import productionTransactionMiddleware from "../../middleware/productionTransaction.middleware";
@@ -13,36 +13,47 @@ const router = Router();
 router.post(
   "/:farmId",
   validate(prodTransactionSchema.newTransactionSchame),
-  checkRole([Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   asyncWrapper(productionTransactionMiddleware.checkProductAvailable),
   asyncWrapper(productionTransactionController.addTransaction)
 );
+
+/** Daily production vs sold/paid — must be before bare /:farmId if paths overlap */
+router.get(
+  "/:farmId/daily",
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  asyncWrapper(farmMiddleware.checkUserFarmExists),
+  asyncWrapper(productionTransactionController.dailySales)
+);
+
 router.get(
   "/:farmId",
-  checkRole([Roles.SUPERADMIN,Roles.ADMIN,Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   asyncWrapper(productionTransactionController.allTransactions)
 );
+
 router.get(
   "/single/:transactionId",
-  checkRole([Roles.SUPERADMIN,Roles.ADMIN,Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(productionTransactionMiddleware.checkUserTansactionExists),
   asyncWrapper(productionTransactionController.singleTransactions)
 );
 
 router.patch(
   "/:transactionId",
-  checkRole([Roles.ADMIN,Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   validate(prodTransactionSchema.updateTransactionSchame),
   asyncWrapper(productionTransactionMiddleware.checkUserTansactionExists),
   asyncWrapper(productionTransactionController.updateTransactions)
 );
+
 router.delete(
   "/:transactionId",
-  checkRole([Roles.ADMIN,Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(productionTransactionMiddleware.checkUserTansactionExists),
   asyncWrapper(productionTransactionController.removeTransactions)
 );
 
-export default router
+export default router;

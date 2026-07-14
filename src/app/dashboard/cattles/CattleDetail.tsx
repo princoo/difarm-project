@@ -31,6 +31,7 @@ import {
   ScaleIcon,
   BeakerIcon,
 } from '@heroicons/react/24/outline';
+import { cattlePlaceInfo } from './cattlePlace';
 
 function computeWellnessScore(report: CattleReport): number {
   const status = report.lifeStatus.status;
@@ -269,37 +270,59 @@ export default function CattleDetail() {
           </SidebarCard>
 
           <SidebarCard className="p-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
-                <MapPinIcon className="w-4 h-4 text-gray-400 mb-1" />
-                <p className="text-[10px] uppercase text-gray-500">Location</p>
-                <p className="text-xs font-semibold text-gray-900 dark:text-white mt-0.5 line-clamp-2">
-                  {cattle.location || '—'}
-                </p>
-              </div>
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
-                <BuildingOffice2Icon className="w-4 h-4 text-gray-400 mb-1" />
-                <p className="text-[10px] uppercase text-gray-500">Farm</p>
-                <p className="text-xs font-semibold text-gray-900 dark:text-white mt-0.5 line-clamp-2">
-                  {cattle.farm?.name || '—'}
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mt-3">
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
-                <ScaleIcon className="w-4 h-4 text-gray-400 mb-1" />
-                <p className="text-[10px] uppercase text-gray-500">Weight</p>
-                <p className="text-xs font-semibold text-gray-900 dark:text-white mt-0.5">
-                  {cattle.weight != null ? `${cattle.weight} kg` : '—'}
-                </p>
-              </div>
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
-                <p className="text-[10px] uppercase text-gray-500">DOB</p>
-                <p className="text-xs font-semibold text-gray-900 dark:text-white mt-2">
-                  {cattle.DOB ? formatDateToLongForm(cattle.DOB) : '—'}
-                </p>
-              </div>
-            </div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+              Farm &amp; location
+            </p>
+            {(() => {
+              const place = cattlePlaceInfo(cattle);
+              return (
+                <div className="space-y-3">
+                  <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <BuildingOffice2Icon className="w-4 h-4 text-gray-400" />
+                      <p className="text-[10px] uppercase text-gray-500">Farm</p>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {place.farmName}
+                    </p>
+                    {place.farmAddress !== '—' && (
+                      <p className="text-xs text-gray-500 mt-1">{place.farmAddress}</p>
+                    )}
+                    {place.farmCoords !== '—' && (
+                      <p className="text-xs text-primary mt-1">
+                        Coordinates: {place.farmCoords}
+                      </p>
+                    )}
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <MapPinIcon className="w-4 h-4 text-gray-400" />
+                      <p className="text-[10px] uppercase text-gray-500">
+                        Cattle location
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">
+                      {place.cattleLocation}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
+                      <ScaleIcon className="w-4 h-4 text-gray-400 mb-1" />
+                      <p className="text-[10px] uppercase text-gray-500">Weight</p>
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white mt-0.5">
+                        {cattle.weight != null ? `${cattle.weight} kg` : '—'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 p-3">
+                      <p className="text-[10px] uppercase text-gray-500">DOB</p>
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white mt-2">
+                        {cattle.DOB ? formatDateToLongForm(cattle.DOB) : '—'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </SidebarCard>
 
           <SidebarCard className="p-4">

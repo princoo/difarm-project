@@ -83,7 +83,7 @@ const UpdateProductionTransactionModal: React.FC<
                                     as="h3"
                                     className="text-lg font-medium leading-6 text-gray-900"
                                 >
-                                    Update Production Transaction
+                                    Update Sale
                                 </Dialog.Title>
                                 <form
                                     onSubmit={handleSubmit(onSubmit)}

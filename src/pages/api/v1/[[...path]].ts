@@ -13,7 +13,8 @@ let initError: Error | null = null;
 
 async function getApp(): Promise<Express> {
   if (initError) throw initError;
-  if (cachedApp) return cachedApp;
+  // Rebuild in development so backend route/middleware edits take effect without a full restart.
+  if (cachedApp && process.env.NODE_ENV === 'production') return cachedApp;
   try {
     // Dynamic import so module-load failures become JSON 500s, not Next HTML 500.
     const { createApp } = await import('../../../../backend/src/createApp');

@@ -22,7 +22,9 @@ import {
   TableCellsIcon,
   MapPinIcon,
   ScaleIcon,
+  BuildingOffice2Icon,
 } from "@heroicons/react/24/outline";
+import { cattlePlaceInfo } from "./cattlePlace";
 
 type ViewMode = "card" | "table";
 
@@ -74,7 +76,11 @@ const CattleList = () => {
           (c.breed || "").toLowerCase().includes(q) ||
           (c.gender || "").toLowerCase().includes(q) ||
           (c.farm?.name || "").toLowerCase().includes(q) ||
-          (c.location || "").toLowerCase().includes(q)
+          (c.location || "").toLowerCase().includes(q) ||
+          (c.farm?.location || "").toLowerCase().includes(q) ||
+          `${c.farm?.latitude || ""} ${c.farm?.longitude || ""}`
+            .toLowerCase()
+            .includes(q)
       );
     }
     return result;
@@ -161,7 +167,35 @@ const CattleList = () => {
     {
       title: "Farm",
       accessor: "farm.name",
-      render: (row) => <p>{row?.farm?.name}</p>,
+      render: (row) => {
+        const place = cattlePlaceInfo(row);
+        return (
+          <div>
+            <p className="font-medium">{place.farmName}</p>
+            {place.farmAddress !== "—" && (
+              <p className="text-xs text-gray-500 truncate max-w-[160px]">
+                {place.farmAddress}
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Location",
+      accessor: "location",
+      render: (row) => {
+        const place = cattlePlaceInfo(row);
+        return (
+          <div>
+            <p>{place.cattleLocation}</p>
+            {place.farmCoords !== "—" &&
+              place.farmCoords !== place.cattleLocation && (
+                <p className="text-xs text-gray-500">{place.farmCoords}</p>
+              )}
+          </div>
+        );
+      },
     },
     {
       title: "Last Checkup",
@@ -282,7 +316,7 @@ const CattleList = () => {
 
           {loading && <p className="text-gray-500">Loading cattle…</p>}
           {!loading && filteredCardList.length === 0 && (
-            <div className="text-center py-16 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
+            <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
               <p className="text-gray-500">No cattle found.</p>
               {canCreate && (
                 <button type="button" className="btn btn-primary mt-4" onClick={() => setIsAddModalOpen(true)}>
@@ -326,12 +360,31 @@ const CattleList = () => {
                         <ScaleIcon className="w-4 h-4 shrink-0 text-gray-400" />
                         <span>{c.weight != null ? `${c.weight} kg` : "—"} · {capitalize(c.gender || "")}</span>
                       </div>
-                      {(c.farm?.name || c.location) && (
-                        <div className="flex items-center gap-1.5 truncate">
-                          <MapPinIcon className="w-4 h-4 shrink-0 text-gray-400" />
-                          <span className="truncate">{c.farm?.name || c.location}</span>
-                        </div>
-                      )}
+                      {(() => {
+                        const place = cattlePlaceInfo(c);
+                        return (
+                          <>
+                            <div className="flex items-center gap-1.5 truncate">
+                              <BuildingOffice2Icon className="w-4 h-4 shrink-0 text-gray-400" />
+                              <span className="truncate font-medium text-gray-700 dark:text-gray-300">
+                                {place.farmName}
+                              </span>
+                            </div>
+                            {(place.cardPlace || place.farmCoords !== "—") && (
+                              <div className="flex items-start gap-1.5">
+                                <MapPinIcon className="w-4 h-4 shrink-0 text-gray-400 mt-0.5" />
+                                <span className="line-clamp-2 text-left">
+                                  {place.cattleLocation !== "—"
+                                    ? place.cattleLocation
+                                    : place.farmCoords !== "—"
+                                      ? place.farmCoords
+                                      : place.farmAddress}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
 
                     <div className="mt-3 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>

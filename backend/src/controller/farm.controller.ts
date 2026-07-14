@@ -259,16 +259,57 @@ export const updateFarm = async (req: Request, res: Response) => {
 };
 
 export const deleteFarm = async (req: Request, res: Response) => {
-  const farmId = asString(req.params.farmId);
+  const farmId = asString(req.params.farmId || req.params.id);
 
-  try {
-    await prisma.farm.delete({
-      where: { id:farmId },
-    });
-    responseHandler.setSuccess(204, "Farm deleted successfully", null);
-  } catch (error) {
-    responseHandler.setError(500, "Error deleting farm");
+  if (!farmId) {
+    responseHandler.setError(StatusCodes.BAD_REQUEST, "Farm id is required");
+    return responseHandler.send(res);
   }
 
-  responseHandler.send(res);
+  try {
+    // Remote Railway DB is slow over the network — raise interactive timeout (default 5s).
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.production.deleteMany({ where: { farmId } });
+        await tx.vaccination.deleteMany({ where: { farmId } });
+        await tx.insemination.deleteMany({ where: { farmId } });
+        await tx.cattle.deleteMany({ where: { farmId } });
+        await tx.wastesLog.deleteMany({ where: { farmId } });
+        await tx.productionTotals.deleteMany({ where: { farmId } });
+        await tx.productionTransaction.deleteMany({ where: { farmId } });
+        await tx.transaction.deleteMany({ where: { farmId } });
+        await tx.stock.deleteMany({ where: { farmId } });
+        await tx.supplier.deleteMany({ where: { farmId } });
+        await tx.veterinarian.deleteMany({ where: { farmId } });
+        await tx.farmManager.deleteMany({ where: { farmId } });
+        await tx.farm.delete({ where: { id: farmId } });
+      },
+      {
+        maxWait: 15_000,
+        timeout: 60_000,
+      }
+    );
+
+    const requestUser = (req as any).user?.data;
+    if (requestUser?.id) {
+      createLog({
+        accountId: requestUser.id,
+        userId: requestUser.userId,
+        action: "DELETE_FARM",
+        entityType: "farm",
+        entityId: farmId,
+        details: `Farm ${farmId} permanently deleted`,
+      }).catch(() => {});
+    }
+
+    responseHandler.setSuccess(StatusCodes.OK, "Farm deleted successfully", null);
+  } catch (error) {
+    console.error("Error deleting farm:", error);
+    responseHandler.setError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Error deleting farm. It may still have related records that could not be removed."
+    );
+  }
+
+  return responseHandler.send(res);
 };
