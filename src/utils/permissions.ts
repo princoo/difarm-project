@@ -126,6 +126,7 @@ export const FARM_OPTIONAL_PATHS = [
 /** Path prefixes → roles allowed to open them (direct URL + RoleGuard). */
 const ROUTE_ROLES: { prefix: string; roles: Role[] }[] = [
   { prefix: '/account/users', roles: ['SUPERADMIN', 'ADMIN'] },
+  { prefix: '/account/farm-profile', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account/farms', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/cattle', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account/production_totals', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },

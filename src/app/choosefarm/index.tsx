@@ -108,7 +108,7 @@ function ChooseFarm() {
 
   const handleContinue = () => {
     if (!selectedFarmId || !selectedIsActive) return;
-    navigate('/account');
+    navigate('/account/farm-profile');
   };
 
   return (

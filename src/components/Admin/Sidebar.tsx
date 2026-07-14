@@ -1,7 +1,10 @@
 import PerfectScrollbar from "react-perfect-scrollbar";
 import { isLoggedIn } from "@/hooks/api/auth";
 import { toggleSidebar } from "@/store/themeConfigSlice";
-import { Cog6ToothIcon } from "@heroicons/react/24/outline";
+import {
+  BuildingOffice2Icon,
+  Cog6ToothIcon,
+} from "@heroicons/react/24/outline";
 import { FaSwatchbook } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { useLocation, Link } from "@/lib/router-compat";
@@ -29,6 +32,13 @@ const Sidebar = () => {
       roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"],
     },
     {
+      name: "Farm profile",
+      to: "/account/farm-profile",
+      icon: BuildingOffice2Icon,
+      current: location.pathname === "/account/farm-profile",
+      roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"],
+    },
+    {
       name: "Users",
       to: "/account/users",
       icon: IconUsers,
@@ -39,7 +49,9 @@ const Sidebar = () => {
       name: "Farms",
       to: "/account/farms",
       icon: IconHome,
-      current: location.pathname === "/account/farms",
+      current:
+        location.pathname === "/account/farms" ||
+        location.pathname.startsWith("/account/farms/"),
       roles: ["SUPERADMIN", "ADMIN", "MANAGER"],
     },
     {

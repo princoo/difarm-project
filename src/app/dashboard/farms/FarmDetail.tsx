@@ -8,21 +8,12 @@ import { capitalize } from "lodash";
 import IconHome from "@/components/Icon/IconHome";
 import { setFarmId } from "@/utils/farmId";
 import AssignManagerModal from "./assign_manager";
+import FarmProfileSection, {
+  FarmProfileData,
+  unwrapFarmProfile,
+} from "./FarmProfileSection";
 import { isLoggedIn } from "@/hooks/api/auth";
 import { isFarmAdmin, isSuperAdmin } from "@/utils/permissions";
-
-interface FarmDataShape {
-  id?: string;
-  name?: string;
-  location?: string;
-  size?: string;
-  type?: string;
-  status?: boolean;
-  managerId?: string | null;
-  owner?: { fullname?: string };
-  manager?: { fullname?: string } | null;
-  managerLinks?: { userId: string; user?: { fullname?: string } }[];
-}
 
 export default function FarmDetail() {
   const { farmId } = useParams<{ farmId: string }>();
@@ -37,7 +28,9 @@ export default function FarmDetail() {
   const user = isLoggedIn();
   const canManageFarm = isSuperAdmin(user?.role) || isFarmAdmin(user?.role);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [activeMainTab, setActiveMainTab] = useState<"cattle" | "production" | "health">("cattle");
+  const [activeMainTab, setActiveMainTab] = useState<
+    "profile" | "cattle" | "production" | "health"
+  >("profile");
   const [productionSubTab, setProductionSubTab] = useState<"list" | "sales">("list");
   const [healthSubTab, setHealthSubTab] = useState<"vaccination" | "insemination" | "veterinarians">("vaccination");
 
@@ -172,8 +165,7 @@ export default function FarmDetail() {
     );
   }
 
-  const farmPayload = farm as { data?: FarmDataShape } | null;
-  const farmData: FarmDataShape = farmPayload?.data ?? (farmPayload as FarmDataShape) ?? {};
+  const farmData: FarmProfileData = unwrapFarmProfile(farm) ?? {};
 
   const farmName = String(farmData?.name ?? "Farm");
   const farmLocation = String(farmData?.location ?? "—");
@@ -258,8 +250,8 @@ export default function FarmDetail() {
       </div>
 
       <div className="mt-6">
-        <div className="flex border-b border-gray-200 dark:border-gray-700 gap-2">
-          {(["cattle", "production", "health"] as const).map((tab) => (
+        <div className="flex border-b border-gray-200 dark:border-gray-700 gap-2 flex-wrap">
+          {(["profile", "cattle", "production", "health"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -276,6 +268,10 @@ export default function FarmDetail() {
         </div>
 
         <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-b-lg p-4 bg-white dark:bg-gray-800 min-h-[200px]">
+          {activeMainTab === "profile" && (
+            <FarmProfileSection farm={farmData} showActions={false} />
+          )}
+
           {activeMainTab === "cattle" && (
             <>
               <h2 className="text-lg font-semibold mb-3">Cattle list</h2>
@@ -430,7 +426,6 @@ export default function FarmDetail() {
           name: farmName,
           status: farmData.status,
           managerId: farmData.managerId,
-          manager: farmData.manager,
           managerLinks: farmData.managerLinks,
         }}
         handleRefetch={refetchFarm}

@@ -26,6 +26,7 @@ import AboutUs from "@/app/home/About";
 import ServicesCard from "@/app/home/Service";
 import MetricsPage from "@/app/dashboard/OverView/MetricsPage";
 import Overview from "@/app/dashboard/OverView";
+import FarmProfilePage from "@/app/dashboard/farms/FarmProfilePage";
 
 
 export default function AppRoutes() {
@@ -45,6 +46,7 @@ export default function AppRoutes() {
 
                 {/* <Route index element={<DashboardOverview />} /> */}
                 <Route index element={<Overview />} />
+                <Route path='farm-profile' element={<FarmProfilePage />} />
                 <Route path='profile' element={<ProfilePage />} />
                 <Route path='farms' element={<FarmsList />} />
                 <Route path='farms/:farmId' element={<FarmDetail />} />

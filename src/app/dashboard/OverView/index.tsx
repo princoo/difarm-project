@@ -32,7 +32,7 @@ export default function Overview() {
             Cattle Overview Dashboard
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            A Clear Overview of Herd Health and Farm Performance at a Glance
+            A clear overview of herd health and farm performance at a glance
           </p>
           {superAdmin && (
             <p className="mt-1 text-sm text-teal-700 dark:text-teal-300">
