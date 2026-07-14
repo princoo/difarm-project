@@ -37,13 +37,7 @@ From this folder:
 npm run seed
 ```
 
-Default dashboard logins after seed (all use the same password):
-
-| Email | Password | Role |
-|-------|----------|------|
-| `superadmin@difarm.com` | `Difarm123` | Super Admin |
-| `admin@difarm.com` | `Difarm123` | Admin |
-| `manager@difarm.com` | `Difarm123` | Manager |
+Seed creates default dashboard users for local setup. Do not publish those credentials on public sites or login screens — change passwords after first login in production.
 
 ## Routes (same as original)
 
