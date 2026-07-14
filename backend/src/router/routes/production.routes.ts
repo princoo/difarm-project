@@ -36,13 +36,13 @@ router.get(
 );
 router.put(
   "/:id",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(productionMiddleware.checkUserproductionExists),
   updateProduction
 );
 router.delete(
   "/:id",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(productionMiddleware.checkUserproductionExists),
   deleteProduction
 );

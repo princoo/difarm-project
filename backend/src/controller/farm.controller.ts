@@ -6,6 +6,7 @@ import { sendEmail } from "../service/sendEmail.service";
 import { Roles } from "@prisma/client";
 import { createLog } from "../service/activityLog.service";
 import { asOptionalString, asString } from "../util/requestParam";
+import farmService from "../service/farm.service";
 
 const responseHandler = new ResponseHandler();
 
@@ -311,5 +312,94 @@ export const deleteFarm = async (req: Request, res: Response) => {
     );
   }
 
+  return responseHandler.send(res);
+};
+
+/** Assign an existing MANAGER user to a farm (SUPERADMIN / owning ADMIN). */
+export const assignFarmManager = async (req: Request, res: Response) => {
+  const farmId = asString(req.params.farmId);
+  const userId = asString(req.body.userId);
+  const requestUser = (req as any).user?.data;
+
+  if (!farmId || !userId) {
+    responseHandler.setError(
+      StatusCodes.BAD_REQUEST,
+      "Farm id and manager user id are required"
+    );
+    return responseHandler.send(res);
+  }
+
+  try {
+    const farm = await prisma.farm.findUnique({ where: { id: farmId } });
+    if (!farm) {
+      responseHandler.setError(StatusCodes.NOT_FOUND, "Farm not found");
+      return responseHandler.send(res);
+    }
+
+    if (requestUser?.role === Roles.ADMIN) {
+      if (farm.ownerId !== requestUser.userId) {
+        responseHandler.setError(
+          StatusCodes.FORBIDDEN,
+          "You can only assign managers to your own farms."
+        );
+        return responseHandler.send(res);
+      }
+      if (!farm.status) {
+        responseHandler.setError(
+          StatusCodes.BAD_REQUEST,
+          "Farm must be activated before assigning a manager."
+        );
+        return responseHandler.send(res);
+      }
+    }
+
+    const managerUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { account: true },
+    });
+
+    if (!managerUser || managerUser.account?.role !== Roles.MANAGER) {
+      responseHandler.setError(
+        StatusCodes.BAD_REQUEST,
+        "Selected user must be an existing farm manager."
+      );
+      return responseHandler.send(res);
+    }
+
+    await farmService.assignManagerToFarm(farmId, userId);
+
+    if (requestUser?.id) {
+      createLog({
+        accountId: requestUser.id,
+        userId: requestUser.userId,
+        action: "UPDATE_USER",
+        entityType: "farm",
+        entityId: farmId,
+        details: `Assigned manager ${managerUser.fullname} to farm ${farm.name}`,
+      }).catch(() => {});
+    }
+
+    const updated = await prisma.farm.findUnique({
+      where: { id: farmId },
+      include: {
+        owner: true,
+        managerLinks: {
+          include: { user: { select: { id: true, fullname: true } } },
+        },
+      },
+    });
+
+    responseHandler.setSuccess(
+      StatusCodes.OK,
+      "Manager assigned to farm successfully",
+      updated
+    );
+  } catch (error) {
+    console.error("assignFarmManager error:", error);
+    responseHandler.setError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Error assigning manager to farm"
+    );
+  }
   return responseHandler.send(res);
 };

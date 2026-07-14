@@ -43,7 +43,7 @@ router.get(
 
 router.patch(
   "/:transactionId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   validate(prodTransactionSchema.updateTransactionSchame),
   asyncWrapper(productionTransactionMiddleware.checkUserTansactionExists),
   asyncWrapper(productionTransactionController.updateTransactions)
@@ -51,7 +51,7 @@ router.patch(
 
 router.delete(
   "/:transactionId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(productionTransactionMiddleware.checkUserTansactionExists),
   asyncWrapper(productionTransactionController.removeTransactions)
 );

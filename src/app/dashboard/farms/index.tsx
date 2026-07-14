@@ -5,18 +5,18 @@ import formatDateToLongForm from "@/utils/DateFormattter";
 import { capitalize } from "lodash";
 import IconPlus from "@/components/Icon/IconPlus";
 import IconHome from "@/components/Icon/IconHome";
-import UpdateFarmModal from "./update";
 import IconTrash from "@/components/Icon/IconTrash";
 import IconPencil from "@/components/Icon/IconPencil";
 import IconEye from "@/components/Icon/IconEye";
 import ConfirmDeleteModal from "./delete";
+import AssignManagerModal from "./assign_manager";
 import { useNavigate } from "@/lib/router-compat";
 import { isLoggedIn, useFetchUsers } from "@/hooks/api/auth";
 import { activateFarm as activateFarmApi } from "@/hooks/api/farms";
-import { canActivateFarm, isFarmAdmin, isSuperAdmin } from "@/utils/permissions";
+import { canActivateFarm, canDeleteEntity, canUpdateEntity, isFarmAdmin, isSuperAdmin } from "@/utils/permissions";
 import toast from "react-hot-toast";
 import { setFarmId } from "@/utils/farmId";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 
 const FarmsList = () => {
   const navigate = useNavigate();
@@ -29,8 +29,11 @@ const FarmsList = () => {
   const { users: allUsers, fetchUsers } = useFetchUsers();
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedFarm, setSelectedFarm] = useState<any>(null);
+  const canAssignManager = superAdmin || farmAdmin;
+  const canEditFarm = canUpdateEntity('farms', user?.role ?? '');
+  const canDeleteFarm = canDeleteEntity('farms', user?.role ?? '');
 
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchFilter, setSearchFilter] = useState<string>("");
@@ -171,24 +174,42 @@ const FarmsList = () => {
             Activate
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedFarm(row);
-            setIsUpdateModalOpen(true);
-          }}
-        >
-          <IconPencil className="text-primary" />
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedFarm(row);
-            setIsDeleteModalOpen(true);
-          }}
-        >
-          <IconTrash className="text-danger" />
-        </button>
+        {canEditFarm && (
+          <button
+            type="button"
+            onClick={() => {
+              setFarmId(row.id);
+              navigate(`/account/farms/${row?.id}/edit`);
+            }}
+            title="Edit farm profile"
+          >
+            <IconPencil className="text-primary" />
+          </button>
+        )}
+        {canAssignManager && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFarm(row);
+              setIsAssignModalOpen(true);
+            }}
+            title="Assign manager"
+            className="text-primary"
+          >
+            <UserPlusIcon className="w-5 h-5" />
+          </button>
+        )}
+        {canDeleteFarm && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFarm(row);
+              setIsDeleteModalOpen(true);
+            }}
+          >
+            <IconTrash className="text-danger" />
+          </button>
+        )}
       </div>
     ),
   };
@@ -286,9 +307,9 @@ const FarmsList = () => {
         <p className="text-danger text-sm mb-2">{error}</p>
       )}
 
-      <UpdateFarmModal
-        isOpen={isUpdateModalOpen}
-        onClose={() => setIsUpdateModalOpen(false)}
+      <AssignManagerModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
         farm={selectedFarm}
         handleRefetch={handleRefetch}
       />

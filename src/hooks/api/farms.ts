@@ -150,31 +150,49 @@ export const useGetFarmById = (id: string) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchFarm = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await api.get(`/farms/farm/${id}`);
-                setFarm(response.data);
-            } catch (error: any) {
-                const errorMessage =
-                    error.response?.data?.message ||
-                    'An error occurred while fetching the farm.';
-                toast.error(errorMessage);
-                setError(errorMessage);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (id) {
-            fetchFarm();
+    const fetchFarm = async () => {
+        if (!id) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await api.get(`/farms/farm/${id}`);
+            setFarm(response.data);
+        } catch (error: any) {
+            const errorMessage =
+                error.response?.data?.message ||
+                'An error occurred while fetching the farm.';
+            toast.error(errorMessage);
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
+        fetchFarm();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
-    return { farm, loading, error };
+    return { farm, loading, error, refetch: fetchFarm };
 };
 
 export const activateFarm = (farmId: string) =>
     api.patch(`/farms/${farmId}/activate`);
+
+export const assignFarmManager = async (farmId: string, userId: string) => {
+    try {
+        const response = await api.post(`/farms/${farmId}/assign-manager`, {
+            userId,
+        });
+        toast.success(
+            response.data?.message || 'Manager assigned to farm successfully'
+        );
+        return response.data;
+    } catch (error: any) {
+        const message =
+            error.response?.data?.message ||
+            'Failed to assign manager to farm.';
+        toast.error(message);
+        throw error;
+    }
+};

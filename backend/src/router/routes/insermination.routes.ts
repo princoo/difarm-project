@@ -50,7 +50,7 @@ router.get(
 );
 router.put(
   "/:inseminationId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER, Roles.VETERINARIAN]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.VETERINARIAN]),
   asyncWrapper(inseminationMiddleware.checkInseminationExists),
   updateInsemination
 );

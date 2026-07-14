@@ -7,21 +7,36 @@ import formatDateToLongForm from "@/utils/DateFormattter";
 import { capitalize } from "lodash";
 import IconHome from "@/components/Icon/IconHome";
 import { setFarmId } from "@/utils/farmId";
+import AssignManagerModal from "./assign_manager";
+import { isLoggedIn } from "@/hooks/api/auth";
+import { isFarmAdmin, isSuperAdmin } from "@/utils/permissions";
 
 interface FarmDataShape {
+  id?: string;
   name?: string;
   location?: string;
   size?: string;
   type?: string;
   status?: boolean;
+  managerId?: string | null;
   owner?: { fullname?: string };
+  manager?: { fullname?: string } | null;
+  managerLinks?: { userId: string; user?: { fullname?: string } }[];
 }
 
 export default function FarmDetail() {
   const { farmId } = useParams<{ farmId: string }>();
   const navigate = useNavigate();
-  const { farm, loading: farmLoading, error: farmError } = useGetFarmById(farmId ?? "");
+  const {
+    farm,
+    loading: farmLoading,
+    error: farmError,
+    refetch: refetchFarm,
+  } = useGetFarmById(farmId ?? "");
 
+  const user = isLoggedIn();
+  const canManageFarm = isSuperAdmin(user?.role) || isFarmAdmin(user?.role);
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState<"cattle" | "production" | "health">("cattle");
   const [productionSubTab, setProductionSubTab] = useState<"list" | "sales">("list");
   const [healthSubTab, setHealthSubTab] = useState<"vaccination" | "insemination" | "veterinarians">("vaccination");
@@ -195,6 +210,26 @@ export default function FarmDetail() {
             >
               {statusLabel}
             </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {canManageFarm && (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={() => navigate(`/account/farms/${farmId}/edit`)}
+                >
+                  Edit farm
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setIsAssignOpen(true)}
+                >
+                  Assign manager
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -386,6 +421,20 @@ export default function FarmDetail() {
           )}
         </div>
       </div>
+
+      <AssignManagerModal
+        isOpen={isAssignOpen}
+        onClose={() => setIsAssignOpen(false)}
+        farm={{
+          id: farmId,
+          name: farmName,
+          status: farmData.status,
+          managerId: farmData.managerId,
+          manager: farmData.manager,
+          managerLinks: farmData.managerLinks,
+        }}
+        handleRefetch={refetchFarm}
+      />
     </div>
   );
 }

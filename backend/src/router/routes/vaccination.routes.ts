@@ -64,7 +64,7 @@ router.get(
 );
 router.put(
   "/:vaccineId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER, Roles.VETERINARIAN]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.VETERINARIAN]),
   handleVaccinationUpload,
   asyncWrapper(vaccinationMiddleware.checkUservaccineExists),
   updateVaccination

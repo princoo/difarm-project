@@ -74,6 +74,43 @@ export const ONBOARDING_STEPS = [
   { id: 5, key: 'contact', title: 'Contact & review', subtitle: 'Reach you & submit' },
 ] as const;
 
+/** Map a farm API record into onboarding form values. */
+export function farmToOnboardingValues(farm: Record<string, any>): FarmOnboardingValues {
+  const livestockRaw = String(farm.primaryLivestock ?? '');
+  const primaryLivestock = livestockRaw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const str = (v: unknown) =>
+    v == null || v === '' ? '' : String(v);
+
+  return {
+    name: str(farm.name),
+    registrationNo: str(farm.registrationNo),
+    type: str(farm.type),
+    yearEstablished: str(farm.yearEstablished),
+    description: str(farm.description),
+    locationText: str(farm.location),
+    size: str(farm.size),
+    grazingArea: str(farm.grazingArea),
+    housingCapacity: str(farm.housingCapacity),
+    waterSource: str(farm.waterSource),
+    hasElectricity: Boolean(farm.hasElectricity),
+    veterinaryAccess: str(farm.veterinaryAccess),
+    landmarks: str(farm.landmarks),
+    latitude: str(farm.latitude),
+    longitude: str(farm.longitude),
+    primaryLivestock:
+      primaryLivestock.length > 0 ? primaryLivestock : [],
+    breeds: str(farm.breeds),
+    herdSizeEstimate: str(farm.herdSizeEstimate),
+    contactPhone: str(farm.contactPhone),
+    contactEmail: str(farm.contactEmail),
+    emergencyContact: str(farm.emergencyContact),
+  };
+}
+
 export function buildFarmPayload(values: FarmOnboardingValues, ownerId?: string) {
   const parseOptionalInt = (v?: string) => {
     if (!v?.trim()) return undefined;

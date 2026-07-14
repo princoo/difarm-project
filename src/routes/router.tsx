@@ -4,6 +4,7 @@ import ChooseFarm from '@/app/choosefarm';
 import CattleList from '@/app/dashboard/cattles';
 import FarmsList from '@/app/dashboard/farms';
 import FarmDetail from '@/app/dashboard/farms/FarmDetail';
+import EditFarmPage from '@/app/dashboard/farms/EditFarmPage';
 import InseminationRecords from '@/app/dashboard/insemination';
 import Production from '@/app/dashboard/production';
 import ProductionTotals from '@/app/dashboard/productionTotals';
@@ -47,6 +48,7 @@ export default function AppRoutes() {
                 <Route path='profile' element={<ProfilePage />} />
                 <Route path='farms' element={<FarmsList />} />
                 <Route path='farms/:farmId' element={<FarmDetail />} />
+                <Route path='farms/:farmId/edit' element={<EditFarmPage />} />
                 <Route path='users' element={<Users />} />
                 <Route path='users/detail/:userId' element={<UserDetail />} />
                 <Route path='activity-logs' element={<ActivityLogs />} />

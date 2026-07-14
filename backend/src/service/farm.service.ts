@@ -10,6 +10,14 @@ const getUserFarmById = async (farmId: string, userId: string) => {
         { managerLinks: { some: { userId } } },
       ],
     },
+    include: {
+      owner: {
+        include: { account: { select: { username: true, role: true } } },
+      },
+      managerLinks: {
+        include: { user: { select: { id: true, fullname: true } } },
+      },
+    },
   });
   return result;
 };
@@ -24,6 +32,14 @@ const getFarmForVeterinarian = async (farmId: string, accountId: string) => {
 const getSingleFarm = async (farmId: string) => {
   const result = await prisma.farm.findUnique({
     where: { id: farmId },
+    include: {
+      owner: {
+        include: { account: { select: { username: true, role: true } } },
+      },
+      managerLinks: {
+        include: { user: { select: { id: true, fullname: true } } },
+      },
+    },
   });
   return result;
 };
@@ -50,13 +66,10 @@ async function assignManagerToFarm(farmId: string, userId: string) {
     create: { farmId, userId },
     update: {},
   });
-  const farm = await prisma.farm.findUnique({ where: { id: farmId } });
-  if (farm && !farm.managerId) {
-    await prisma.farm.update({
-      where: { id: farmId },
-      data: { managerId: userId },
-    });
-  }
+  await prisma.farm.update({
+    where: { id: farmId },
+    data: { managerId: userId },
+  });
 }
 
 export default {

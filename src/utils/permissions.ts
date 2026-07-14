@@ -2,7 +2,7 @@
  * Role-based access control for DiFarm.
  * SUPERADMIN — full platform access, activates farms & accounts.
  * ADMIN (Farm Admin) — owns farms, creates managers, farm-scoped data.
- * MANAGER — assigned farm(s) only, operational CRUD when farm is active.
+ * MANAGER — assigned farm(s): view + add operational data only (no edit/delete).
  * VETERINARIAN — cattle view + health module on assigned farm.
  */
 
@@ -67,10 +67,43 @@ const canCreate: Partial<Record<Entity, Role[]>> = {
   activityLogs: [],
 };
 
+/** Edit/delete: farm admin or above. Managers contact admin to change records. */
 const canUpdate: Partial<Record<Entity, Role[]>> = {
   users: ['SUPERADMIN', 'ADMIN'],
+  farms: ['SUPERADMIN', 'ADMIN'],
+  cattle: ['SUPERADMIN', 'ADMIN'],
+  production: ['SUPERADMIN', 'ADMIN'],
+  productionTotals: ['SUPERADMIN', 'ADMIN'],
+  productionTransactions: ['SUPERADMIN', 'ADMIN'],
+  wasteLogs: ['SUPERADMIN', 'ADMIN'],
+  stock: ['SUPERADMIN', 'ADMIN'],
+  stockTransactions: ['SUPERADMIN', 'ADMIN'],
+  vaccinations: ['SUPERADMIN', 'ADMIN', 'VETERINARIAN'],
+  inseminations: ['SUPERADMIN', 'ADMIN', 'VETERINARIAN'],
+  veterinarians: ['SUPERADMIN', 'ADMIN'],
+  activityLogs: [],
+};
+
+const canDelete: Partial<Record<Entity, Role[]>> = {
+  users: ['SUPERADMIN'],
+  farms: ['SUPERADMIN', 'ADMIN'],
+  cattle: ['SUPERADMIN', 'ADMIN'],
+  production: ['SUPERADMIN', 'ADMIN'],
+  productionTotals: ['SUPERADMIN', 'ADMIN'],
+  productionTransactions: ['SUPERADMIN', 'ADMIN'],
+  wasteLogs: ['SUPERADMIN', 'ADMIN'],
+  stock: ['SUPERADMIN', 'ADMIN'],
+  stockTransactions: ['SUPERADMIN', 'ADMIN'],
+  vaccinations: [],
+  inseminations: [],
+  veterinarians: [],
+  activityLogs: [],
+};
+
+/** View access when create/update/delete alone would miss a role (e.g. managers on farms). */
+const canViewExtra: Partial<Record<Entity, Role[]>> = {
   farms: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
@@ -79,24 +112,9 @@ const canUpdate: Partial<Record<Entity, Role[]>> = {
   stockTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   vaccinations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   inseminations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
-  veterinarians: ['SUPERADMIN', 'ADMIN'],
-  activityLogs: [],
-};
-
-const canDelete: Partial<Record<Entity, Role[]>> = {
-  users: ['SUPERADMIN'],
-  farms: ['SUPERADMIN', 'ADMIN'],
-  cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  productionTotals: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  wasteLogs: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  stock: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  stockTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  vaccinations: [],
-  inseminations: [],
-  veterinarians: [],
-  activityLogs: [],
+  veterinarians: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  activityLogs: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  users: ['SUPERADMIN', 'ADMIN'],
 };
 
 /** Routes that do not require a selected farm (super admin exempt in RoleGuard). */
@@ -121,8 +139,14 @@ const ROUTE_ROLES: { prefix: string; roles: Role[] }[] = [
   { prefix: '/account', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
 ];
 
+const FARM_EDIT_ROLES: Role[] = ['SUPERADMIN', 'ADMIN'];
+
 export function canAccessRoute(path: string, role?: string): boolean {
   if (!role) return false;
+  // Farm profile edit is admin-only (managers view + create only)
+  if (/^\/account\/farms\/[^/]+\/edit\/?$/.test(path)) {
+    return FARM_EDIT_ROLES.includes(role as Role);
+  }
   const specific = ROUTE_ROLES
     .filter((r) => path === r.prefix || path.startsWith(`${r.prefix}/`) || path.startsWith(r.prefix))
     .sort((a, b) => b.prefix.length - a.prefix.length)[0];
@@ -146,16 +170,15 @@ export function canDeleteEntity(entity: Entity, role: string): boolean {
 }
 
 export function canViewEntity(entity: Entity, role: string): boolean {
-  return (
+  if (
     canCreateEntity(entity, role) ||
     canUpdateEntity(entity, role) ||
-    canDeleteEntity(entity, role) ||
-    (entity === 'cattle' && role === 'VETERINARIAN') ||
-    (entity === 'activityLogs' && ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'].includes(role)) ||
-    (entity === 'veterinarians' && role === 'VETERINARIAN') ||
-    (entity === 'vaccinations' && role === 'VETERINARIAN') ||
-    (entity === 'inseminations' && role === 'VETERINARIAN')
-  );
+    canDeleteEntity(entity, role)
+  ) {
+    return true;
+  }
+  const extra = canViewExtra[entity];
+  return Array.isArray(extra) && extra.includes(role as Role);
 }
 
 export function canActivateFarm(role?: string): boolean {

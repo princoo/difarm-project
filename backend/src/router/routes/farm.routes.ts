@@ -6,6 +6,7 @@ import {
   updateFarm,
   deleteFarm,
   activateFarm,
+  assignFarmManager,
 } from "../../controller/farm.controller";
 import checkRole from "../../middleware/checkRole.middleware";
 import farmValidation from "../../middleware/farmValidation.middleware";
@@ -29,9 +30,15 @@ router.get(
 );
 router.put(
   "/:farmId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   updateFarm
+);
+router.post(
+  "/:farmId/assign-manager",
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
+  asyncWrapper(farmMiddleware.checkUserFarmExists),
+  asyncWrapper(assignFarmManager)
 );
 router.patch(
   "/:farmId/activate",
@@ -41,7 +48,7 @@ router.patch(
 );
 router.delete(
   "/:farmId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   deleteFarm
 );

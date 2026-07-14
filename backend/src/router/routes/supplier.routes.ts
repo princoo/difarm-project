@@ -26,12 +26,12 @@ router.get(
 );
 router.put(
   '/:id',
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   updateSupplier,
 );
 router.delete(
   '/:id',
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   deleteSupplier,
 );
 

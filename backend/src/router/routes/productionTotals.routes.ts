@@ -19,14 +19,14 @@ router.post(
 );
 router.patch(
   "/:infoId",
-  checkRole([Roles.ADMIN,Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   validate(prodTotalsSchema.updatenewProdInfoSchema),
   asyncWrapper(prodTotalsMiddleware.checkProdInfoExists),
   asyncWrapper(productionTotalsController.editProductInfo)
 );
 router.delete(
   "/:infoId",
-  checkRole([Roles.ADMIN,Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(prodTotalsMiddleware.checkProdInfoExists),
   asyncWrapper(productionTotalsController.removeProductInfo)
 );

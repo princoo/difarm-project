@@ -31,14 +31,14 @@ router.get(
 );
 router.patch(
   "/:wasteId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   validate(wasteLogValidation.newWasteLogSchema),
   asyncWrapper(wasteLogMiddleware.checkWasteLogExists),
   asyncWrapper(wasteLogController.updateWasteLog)
 );
 router.delete(
   "/:wasteId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(wasteLogMiddleware.checkWasteLogExists),
   asyncWrapper(wasteLogController.deleteWasteLog)
 );

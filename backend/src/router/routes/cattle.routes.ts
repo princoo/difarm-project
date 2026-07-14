@@ -65,13 +65,13 @@ router.get(
 );
 router.put(
   "/:cattleId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(cattleMiddleware.checkUserCattleExists),
   updateCattle
 );
 router.delete(
   "/:cattleId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(cattleMiddleware.checkUserCattleExists),
   deleteCattle
 );
