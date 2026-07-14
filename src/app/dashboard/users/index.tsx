@@ -11,11 +11,12 @@ import { canActivateAccount, canCreateEntity, roleLabel } from '@/utils/permissi
 import { useActivityLogs, useActivityLogsFarm } from '@/hooks/api/activityLog';
 import AddUserModal from './add_user';
 import UpdateUserModal from './update_user';
+import SetPasswordModal from './set_password';
 import AddVeterinarianModal from './add_veterinarian';
 import ConfirmDeleteModal from './delete';
 import UserAvatar from './UserAvatar';
 import { useNavigate } from '@/lib/router-compat';
-import { MagnifyingGlassIcon, FunnelIcon, EnvelopeIcon, PhoneIcon, DocumentTextIcon, XMarkIcon, Squares2X2Icon, TableCellsIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, FunnelIcon, EnvelopeIcon, PhoneIcon, DocumentTextIcon, XMarkIcon, Squares2X2Icon, TableCellsIcon, KeyIcon } from '@heroicons/react/24/outline';
 
 type UsersViewMode = 'cards' | 'table';
 const USERS_VIEW_KEY = 'difarm-users-view';
@@ -48,6 +49,7 @@ const Users = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isVetModalOpen, setIsVetModalOpen] = useState(false);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any>({});
     const [selectedAccountIdForLogs, setSelectedAccountIdForLogs] = useState<string | null>(null);
@@ -229,6 +231,14 @@ const Users = () => {
                             </button>
                             <button
                                 type="button"
+                                onClick={() => { setSelectedUser(row); setIsPasswordModalOpen(true); }}
+                                className="text-primary text-sm inline-flex items-center gap-1"
+                                title="Set new password"
+                            >
+                                <KeyIcon className="w-4 h-4" /> Password
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => { setSelectedUser(row); setIsDeleteModalOpen(true); }}
                                 className="text-danger text-sm inline-flex items-center gap-1"
                                 title="Delete user"
@@ -407,6 +417,14 @@ const Users = () => {
                                                 </button>
                                                 <button
                                                     type="button"
+                                                    onClick={() => { setSelectedUser(u); setIsPasswordModalOpen(true); }}
+                                                    className="btn btn-outline-primary py-1.5 px-2 text-xs font-medium inline-flex items-center gap-1"
+                                                    title="Set new password"
+                                                >
+                                                    <KeyIcon className="w-4 h-4" /> Password
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={() => { setSelectedUser(u); setIsDeleteModalOpen(true); }}
                                                     className="btn btn-outline-danger py-1.5 px-2 text-xs font-medium inline-flex items-center gap-1"
                                                 >
@@ -532,6 +550,7 @@ const Users = () => {
                 <AddUserModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} handleRefetch={handleRefetch} />
                 <AddVeterinarianModal isOpen={isVetModalOpen} onClose={() => setIsVetModalOpen(false)} handleRefetch={handleRefetch} />
                 <UpdateUserModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} user={selectedUser} handleRefetch={handleRefetch} />
+                <SetPasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} user={selectedUser} />
                 <ConfirmDeleteModal
                     isOpen={isDeleteModalOpen}
                     onClose={() => setIsDeleteModalOpen(false)}
@@ -555,6 +574,7 @@ const Users = () => {
             </div>
             <AddUserModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} handleRefetch={handleRefetch} />
             <UpdateUserModal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} user={selectedUser} handleRefetch={handleRefetch} />
+            <SetPasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} user={selectedUser} />
             <ConfirmDeleteModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}

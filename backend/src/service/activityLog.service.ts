@@ -15,6 +15,7 @@ export type LogAction =
   | "CREATE_VACCINATION"
   | "CREATE_INSEMINATION"
   | "CREATE_VETERINARIAN"
+  | "RESET_PASSWORD"
   | "OTHER";
 
 export const createLog = async (params: {

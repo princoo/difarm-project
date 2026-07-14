@@ -5,6 +5,8 @@ import { Roles } from "@prisma/client";
 import { StatusCodes } from "http-status-codes";
 import { paginate } from "../util/paginate";
 import { asNumber, asString } from "../util/requestParam";
+import { hashPassword } from "../service/bcrypt.service";
+import { createLog } from "../service/activityLog.service";
 
 export const getAdminTeam = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
@@ -373,6 +375,59 @@ export const deleteUser = async (req: Request, res: Response) => {
       StatusCodes.BAD_REQUEST,
       "Error deleting user. Related records may still be linked to this account."
     );
+    return responseHandler.send(res);
+  }
+};
+
+/** Super admin sets a new password for a user who forgot theirs. */
+export const setUserPassword = async (req: Request, res: Response) => {
+  const responseHandler = new ResponseHandler();
+  const userId = asString(req.params.userId);
+  const { password } = req.body;
+  const requestUser = (req as any).user?.data;
+  const target = req.actionUser;
+
+  if (!userId || !password) {
+    responseHandler.setError(StatusCodes.BAD_REQUEST, "User id and password are required");
+    return responseHandler.send(res);
+  }
+
+  if (!target?.accountId || !target.account) {
+    responseHandler.setError(StatusCodes.NOT_FOUND, "User account not found");
+    return responseHandler.send(res);
+  }
+
+  if (target.account.role === Roles.SUPERADMIN) {
+    responseHandler.setError(
+      StatusCodes.FORBIDDEN,
+      "Cannot reset another super admin password."
+    );
+    return responseHandler.send(res);
+  }
+
+  try {
+    const hashed = await hashPassword(password);
+    await prisma.account.update({
+      where: { id: target.accountId },
+      data: { password: hashed },
+    });
+
+    if (requestUser?.id) {
+      await createLog({
+        accountId: requestUser.id,
+        userId: requestUser.userId,
+        action: "RESET_PASSWORD",
+        entityType: "account",
+        entityId: target.accountId,
+        details: `Password reset for ${target.account.email || target.fullname || userId}`,
+      });
+    }
+
+    responseHandler.setSuccess(200, "Password updated successfully", null);
+    return responseHandler.send(res);
+  } catch (error) {
+    console.error("Error setting user password:", error);
+    responseHandler.setError(StatusCodes.BAD_REQUEST, "Error updating password");
     return responseHandler.send(res);
   }
 };

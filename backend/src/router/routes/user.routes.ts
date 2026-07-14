@@ -7,6 +7,7 @@ import {
   deleteUser,
   updateAccount,
   getAdminTeam,
+  setUserPassword,
 } from "../../controller/users.controller";
 import checkRole from "../../middleware/checkRole.middleware";
 import { Roles } from "../../util/enum/Roles.enum";
@@ -37,6 +38,13 @@ router.get(
   checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   getAllUsers
+);
+router.put(
+  "/:userId/password",
+  checkRole([Roles.SUPERADMIN]),
+  validate(userSchemaValidation.setPasswordSchema),
+  asyncWrapper(userMiddleware.checkUserExists),
+  setUserPassword
 );
 router.put(
   "/:userId",
