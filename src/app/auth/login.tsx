@@ -7,14 +7,6 @@ import { useLogin } from '@/hooks/api/auth';
 import { resolvePostLoginDestination } from '@/utils/postLoginRouting';
 import { imageSrc } from '@/lib/image-src';
 
-const DEMO_ACCOUNTS = [
-  { label: 'Super Admin', email: 'superadmin@difarm.com', hint: 'Full access — activates farms & accounts' },
-  { label: 'Farm Admin', email: 'admin@difarm.com', hint: 'Creates farms & managers (farm-scoped)' },
-  { label: 'Farm Manager', email: 'manager@difarm.com', hint: 'Works on assigned activated farm' },
-];
-
-const DEMO_PASSWORD = 'Difarm123';
-
 const Login: React.FC = () => {
     const navigate = useNavigate();
     const { loadingLogin, login } = useLogin();
@@ -26,10 +18,6 @@ const Login: React.FC = () => {
             ...credentials,
             [name]: value,
         });
-    };
-
-    const fillDemo = (email: string) => {
-        setCredentials({ username: email, password: DEMO_PASSWORD });
     };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -95,30 +83,6 @@ const Login: React.FC = () => {
                             {loadingLogin ? 'Signing in...' : 'Sign In'}
                         </button>
                     </form>
-
-                    <div className="rounded-lg border border-teal-100 bg-teal-50/80 p-4 text-sm dark:border-teal-900 dark:bg-teal-950/40">
-                        <p className="font-semibold text-teal-800 dark:text-teal-200 mb-2">
-                            Quick login (password: {DEMO_PASSWORD})
-                        </p>
-                        <div className="space-y-2">
-                            {DEMO_ACCOUNTS.map((account) => (
-                                <button
-                                    key={account.email}
-                                    type="button"
-                                    onClick={() => fillDemo(account.email)}
-                                    className="flex w-full items-center justify-between rounded-md bg-white px-3 py-2 text-left text-gray-700 shadow-sm hover:bg-teal-100 dark:bg-black dark:text-gray-200 dark:hover:bg-teal-900/50"
-                                >
-                                    <span className="font-medium">{account.label}</span>
-                                    <span className="text-right">
-                                      <span className="block text-teal-700 dark:text-teal-300">{account.email}</span>
-                                      {'hint' in account && (
-                                        <span className="block text-xs text-gray-500 dark:text-gray-400">{account.hint}</span>
-                                      )}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </div>
             <div className="bg-cover h-full" style={{ backgroundImage: `url(${imageSrc(img2)})` }}>
