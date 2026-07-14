@@ -9,7 +9,7 @@ export type LoginUser = {
 
 export type FarmOption = {
   id: string;
-  name: string;
+  name?: string;
   status?: boolean;
   ownerId?: string | null;
   managerId?: string | null;
