@@ -12,6 +12,34 @@ dotenv.config();
 
 export { uploadsRoot };
 
+/** Include apex + www variants so custom domains don't fail CORS. */
+function expandOriginVariants(raw?: string | null): string[] {
+  if (!raw || typeof raw !== 'string') return [];
+  const trimmed = raw.trim().replace(/\/$/, '');
+  if (!trimmed) return [];
+  try {
+    const u = new URL(trimmed);
+    const apex = u.hostname.replace(/^www\./i, '');
+    return Array.from(
+      new Set([
+        `${u.protocol}//${apex}`,
+        `${u.protocol}//www.${apex}`,
+      ])
+    );
+  } catch {
+    return [trimmed];
+  }
+}
+
+function originHostKey(origin: string): string | null {
+  try {
+    const u = new URL(origin);
+    return `${u.protocol}//${u.hostname.replace(/^www\./i, '').toLowerCase()}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Shared Express app for local standalone server and Next.js / Vercel. */
 export function createApp(): Express {
   const app = express();
@@ -22,14 +50,28 @@ export function createApp(): Express {
     console.warn('[createApp] uploads mkdir failed:', err);
   }
 
-  const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    process.env.FRONTEND_UrL,
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3002',
-    'http://localhost:3003',
-  ].filter((origin): origin is string => Boolean(origin));
+  const allowedOrigins = Array.from(
+    new Set(
+      [
+        ...expandOriginVariants(process.env.FRONTEND_URL),
+        ...expandOriginVariants(process.env.FRONTEND_UrL),
+        ...(process.env.CORS_ORIGINS || '')
+          .split(',')
+          .flatMap((o) => expandOriginVariants(o)),
+        ...expandOriginVariants('https://difarm.rw'),
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:3002',
+        'http://localhost:3003',
+      ].filter(Boolean)
+    )
+  );
+
+  const allowedHostKeys = new Set(
+    allowedOrigins
+      .map((o) => originHostKey(o))
+      .filter((k): k is string => Boolean(k))
+  );
 
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -55,7 +97,17 @@ export function createApp(): Express {
         const isLocalhost =
           typeof origin === 'string' && /^http:\/\/localhost:\d+$/.test(origin);
 
-        if (!origin || allowedOrigins.includes(origin) || isLocalhost || isVercel) {
+        const requestKey = origin ? originHostKey(origin) : null;
+        const matchesAllowedHost =
+          Boolean(requestKey) && allowedHostKeys.has(requestKey!);
+
+        if (
+          !origin ||
+          allowedOrigins.includes(origin) ||
+          matchesAllowedHost ||
+          isLocalhost ||
+          isVercel
+        ) {
           callback(null, true);
         } else {
           callback(new Error(`CORS blocked for origin: ${origin}`));
