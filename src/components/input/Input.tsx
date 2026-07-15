@@ -38,6 +38,27 @@ export const InputField: React.FC<InputFieldProps> = ({
         setShowPassword((prev) => !prev);
     };
 
+    // When react-hook-form register() is used, do not pass conflicting
+    // value/defaultValue/onChange/name — that blocked edits from saving.
+    const inputProps = registration
+        ? {
+              ...registration,
+              placeholder,
+              required,
+              autoComplete,
+              autoFocus: focus,
+          }
+        : {
+              name,
+              placeholder,
+              value,
+              defaultValue,
+              onChange,
+              required,
+              autoComplete,
+              autoFocus: focus,
+          };
+
     return (
         <div className={` ${className} my-2`}>
             <label className="block text-sm font-bold  ">
@@ -46,16 +67,8 @@ export const InputField: React.FC<InputFieldProps> = ({
             <div className="relative">
                 <input
                     type={type === 'password' && showPassword ? 'text' : type}
-                    name={name}
-                    placeholder={placeholder}
-                    value={value}
-                    defaultValue={defaultValue}
-                    onChange={onChange}
-                    {...registration}
-                    required={required}
-                    autoComplete={autoComplete}
+                    {...inputProps}
                     className={` block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm pr-10 `}
-                    autoFocus={focus}
                 />
                 {type === 'password' && (
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">

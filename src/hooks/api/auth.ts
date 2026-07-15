@@ -81,9 +81,16 @@ export const useFetchUsers = () => {
             const q = new URLSearchParams();
             if (params?.role) q.set('role', params.role);
             if (params?.status !== undefined && params?.status !== '') q.set('status', params.status === 'active' || params.status === 'true' ? 'true' : 'false');
-            if (params?.page) q.set('page', String(params.page));
-            if (params?.pageSize) q.set('pageSize', String(params.pageSize));
-            const response = await api.get(`/auth/users?${q.toString()}`);
+            q.set('page', String(params?.page ?? 1));
+            q.set('pageSize', String(params?.pageSize ?? 100));
+            // Bust browser/CDN HTTP cache so edits show up immediately
+            q.set('_', String(Date.now()));
+            const response = await api.get(`/auth/users?${q.toString()}`, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    Pragma: 'no-cache',
+                },
+            });
             setUsers(response.data);
         } catch (error: any) {
             const errorMessage =
@@ -162,19 +169,28 @@ export const useUsers = () => {
           const response = await api.post('/auth/signup', user);
           toast.success(response.data?.message || 'User created and assigned to farm successfully.');
         } catch (error: any) {
+          let message = 'An unexpected error occurred. Please try again later.';
           if (error.response && error.response.status === 400) {
             if (error.response.data.error) {
-              const errorMessage = error.response.data.error.join(', ') ||error?.response?.data?.message;
-              toast.error(errorMessage);
-            } else if (error.response.data.message === 'An account with this phone address already exists.') {
-              toast.error('An account with this phone number already exists.');
+              message =
+                (Array.isArray(error.response.data.error)
+                  ? error.response.data.error.join(', ')
+                  : error.response.data.error) ||
+                error?.response?.data?.message ||
+                'Failed to create user.';
+            } else if (
+              error.response.data.message ===
+              'An account with this phone address already exists.'
+            ) {
+              message = 'An account with this phone number already exists.';
             } else {
-              toast.error('Failed to create user. Please try again later.');
+              message =
+                error.response.data.message ||
+                'Failed to create user. Please try again later.';
             }
-          } else {
-            toast.error('An unexpected error occurred. Please try again later.');
           }
-          setError(errorMessage || 'Failed to create user.');
+          toast.error(message);
+          setError(message);
         } finally {
           setLoading(false);
         }
@@ -183,9 +199,8 @@ export const useUsers = () => {
         setLoading(true);
         setError(null);
         try {
-            await api.put(`/users/${id}`, user);
-            await fetchUsers();
-            return true;
+            const response = await api.put(`/users/${id}`, user);
+            return response.data;
         } catch (error: any) {
             const message =
                 error.response?.data?.error ||
@@ -204,8 +219,11 @@ export const useUsers = () => {
         try {
             await api.delete(`/users/${id}`);
             fetchUsers();
-        } catch (error:any) {
-            setError(error);
+        } catch (error: any) {
+            const message =
+                error.response?.data?.message || 'Failed to delete user.';
+            setError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }

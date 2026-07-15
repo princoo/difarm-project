@@ -118,9 +118,16 @@ const Users = () => {
     };
 
     const handleRefetch = () => {
-        if (isSuperAdmin) fetchUsers({ role: roleFilter || undefined, status: statusFilter || undefined });
-        else if (isAdmin) fetchTeam();
-        else refetch();
+        if (isSuperAdmin) {
+            return fetchUsers({
+                role: roleFilter || undefined,
+                status: statusFilter || undefined,
+                page: 1,
+                pageSize: 100,
+            });
+        }
+        if (isAdmin) return fetchTeam();
+        return refetch();
     };
 
     const logs = isSuperAdmin ? logsAll : logsFarm;
