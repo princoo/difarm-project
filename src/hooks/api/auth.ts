@@ -141,7 +141,7 @@ export const useAdminTeam = () => {
 export const useUsers = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
     const farmId = localStorage.getItem('FarmId');
     const fetchUsers = async (query?:string) => {
         setLoading(true);
@@ -150,7 +150,7 @@ export const useUsers = () => {
             setUsers(response.data);
        
         } catch (error:any) {
-            setError(error);
+            setError(error.response?.data?.message || 'Failed to load users.');
         } finally {
             setLoading(false);
         }
@@ -174,18 +174,26 @@ export const useUsers = () => {
           } else {
             toast.error('An unexpected error occurred. Please try again later.');
           }
-          setError(error);
+          setError(errorMessage || 'Failed to create user.');
         } finally {
           setLoading(false);
         }
       };
     const updateUser = async (id: any, user: any) => {
         setLoading(true);
+        setError(null);
         try {
             await api.put(`/users/${id}`, user);
-            fetchUsers();
-        } catch (error:any) {
-            setError(error);
+            await fetchUsers();
+            return true;
+        } catch (error: any) {
+            const message =
+                error.response?.data?.error ||
+                error.response?.data?.message ||
+                'Failed to update user.';
+            setError(message);
+            toast.error(message);
+            throw error;
         } finally {
             setLoading(false);
         }

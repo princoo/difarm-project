@@ -1,9 +1,25 @@
 import Joi from "joi";
 
+/** Used for PUT /users/:userId — all fields optional; only provided ones are validated. */
 const userSchema = Joi.object({
-  fullname: Joi.string().min(3),
-  gender: Joi.string().valid("MALE", "FEMALE"),
-});
+  fullname: Joi.string().trim().min(3).optional(),
+  gender: Joi.string()
+    .valid("MALE", "FEMALE")
+    .optional()
+    .allow("", null),
+  username: Joi.string().trim().min(3).optional().allow(""),
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .optional()
+    .allow("", null),
+  phone: Joi.alternatives()
+    .try(Joi.string().trim(), Joi.number())
+    .optional()
+    .allow("", null),
+})
+  .min(1)
+  .unknown(false);
 
 const setPasswordSchema = Joi.object({
   password: Joi.string()

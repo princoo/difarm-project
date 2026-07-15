@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import ResponseHandler from "../util/responseHandler";
 import prisma from "../db/prisma";
-import { Roles } from "@prisma/client";
+import { Roles, Gender } from "@prisma/client";
 import { StatusCodes } from "http-status-codes";
 import { paginate } from "../util/paginate";
 import { asNumber, asString } from "../util/requestParam";
@@ -225,20 +225,115 @@ export const getUserById = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   const responseHandler = new ResponseHandler();
   const userId = asString(req.params.userId);
+  const { fullname, gender, username, email, phone } = req.body;
 
   try {
-    const updatedUser = await prisma.user.update({
+    const existing = await prisma.user.findUnique({
       where: { id: userId },
-      data: {
-        ...req.body,
-      },
+      include: { account: true },
     });
 
+    if (!existing) {
+      responseHandler.setError(StatusCodes.NOT_FOUND, "User not found");
+      return responseHandler.send(res);
+    }
+
+    const accountData: Record<string, string> = {};
+    if (
+      username !== undefined &&
+      String(username).trim() !== '' &&
+      username !== existing.account?.username
+    ) {
+      const taken = await prisma.account.findUnique({ where: { username } });
+      if (taken && taken.id !== existing.accountId) {
+        responseHandler.setError(
+          StatusCodes.BAD_REQUEST,
+          "An account with this username already exists."
+        );
+        return responseHandler.send(res);
+      }
+      accountData.username = String(username).trim();
+    }
+    if (
+      email !== undefined &&
+      String(email).trim() !== '' &&
+      email !== existing.account?.email
+    ) {
+      const taken = await prisma.account.findUnique({ where: { email } });
+      if (taken && taken.id !== existing.accountId) {
+        responseHandler.setError(
+          StatusCodes.BAD_REQUEST,
+          "An account with this email address already exists."
+        );
+        return responseHandler.send(res);
+      }
+      accountData.email = String(email).trim();
+    }
+    if (
+      phone !== undefined &&
+      String(phone).trim() !== '' &&
+      String(phone) !== existing.account?.phone
+    ) {
+      const phoneStr = String(phone).trim();
+      const taken = await prisma.account.findUnique({ where: { phone: phoneStr } });
+      if (taken && taken.id !== existing.accountId) {
+        responseHandler.setError(
+          StatusCodes.BAD_REQUEST,
+          "An account with this phone number already exists."
+        );
+        return responseHandler.send(res);
+      }
+      accountData.phone = phoneStr;
+    }
+
+    const userData: { fullname?: string; gender?: Gender } = {};
+    if (fullname !== undefined && String(fullname).trim() !== '') {
+      userData.fullname = String(fullname).trim();
+    }
+    if (gender === 'MALE' || gender === 'FEMALE') {
+      userData.gender = gender;
+    }
+
+    if (Object.keys(userData).length > 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: userData,
+      });
+    }
+
+    if (Object.keys(accountData).length > 0) {
+      await prisma.account.update({
+        where: { id: existing.accountId },
+        data: accountData,
+      });
+    }
+
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { account: true },
+    });
+
+    const requestUser = (req as any).user?.data;
+    if (requestUser?.id) {
+      createLog({
+        accountId: requestUser.id,
+        userId: requestUser.userId,
+        action: "UPDATE_USER",
+        entityType: "user",
+        entityId: userId,
+        details: `Updated user ${updatedUser?.fullname ?? userId}`,
+      }).catch(() => {});
+    }
+
     responseHandler.setSuccess(200, "User updated successfully", updatedUser);
-    responseHandler.send(res);
+    return responseHandler.send(res);
   } catch (error) {
-    responseHandler.setError(400, "Error updating user");
-    responseHandler.send(res);
+    console.error("updateUser error:", error);
+    responseHandler.setError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Error updating user"
+    );
+    return responseHandler.send(res);
   }
 };
 export const updateAccount = async (req: Request, res: Response) => {
