@@ -19,12 +19,28 @@ router.post(
   asyncWrapper(productionTransactionController.addTransaction)
 );
 
-/** Daily production vs sold/paid — must be before bare /:farmId if paths overlap */
+router.post(
+  "/:farmId/batch",
+  validate(prodTransactionSchema.batchUsageSchema),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  asyncWrapper(farmMiddleware.checkUserFarmExists),
+  asyncWrapper(productionTransactionMiddleware.checkBatchUsageAvailable),
+  asyncWrapper(productionTransactionController.addBatchUsage)
+);
+
+/** Daily production vs used — must be before bare /:farmId if paths overlap */
 router.get(
   "/:farmId/daily",
   checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   asyncWrapper(productionTransactionController.dailySales)
+);
+
+router.get(
+  "/:farmId/usage-stats",
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  asyncWrapper(farmMiddleware.checkUserFarmExists),
+  asyncWrapper(productionTransactionController.usageStats)
 );
 
 router.get(

@@ -13,6 +13,7 @@ interface SelectProps {
     setValue: any;
     validation?: any;
     options: { label: string; value: string }[];
+    isLoading?: boolean;
 }
 
 export default function AppSelect({
@@ -26,6 +27,7 @@ export default function AppSelect({
     options,
     placeholder,
     required,
+    isLoading = false,
 }: SelectProps) {
 
     useEffect(() => {
@@ -39,10 +41,18 @@ export default function AppSelect({
             <label htmlFor="" className='text-sm font-bold'>{required ? '*' : ''} {label}</label>
             <Select
                 {...register(name, validation)}
-                onChange={(val: any) => setValue(name, val.value)}
+                onChange={(val: any) => setValue(name, val?.value ?? '', { shouldValidate: true })}
                 options={options}
                 placeholder={placeholder}
                 defaultValue={defaultValue}
+                isLoading={isLoading}
+                noOptionsMessage={() =>
+                  isLoading ? 'Loading cattle…' : 'No cattle found'
+                }
+                menuPortalTarget={
+                  typeof document !== 'undefined' ? document.body : null
+                }
+                menuPosition="fixed"
                 classNamePrefix="react-select"
                 styles={{
                     control: (provided) => ({
@@ -65,6 +75,11 @@ export default function AppSelect({
                     menu: (provided) => ({
                         ...provided,
                         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                        zIndex: 10050,
+                    }),
+                    menuPortal: (provided) => ({
+                        ...provided,
+                        zIndex: 10050,
                     }),
                 }}
             />

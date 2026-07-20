@@ -9,7 +9,8 @@ interface ProductionData {
     productName: string;
     quantity: number;
     productionDate: string;
-    expirationDate: string;
+    expirationDate?: string | null;
+    milkingSession?: 'MORNING' | 'EVENING' | null;
 }
 
 export const useProduction = () => {
@@ -17,7 +18,7 @@ export const useProduction = () => {
     const [error, setError] = useState<string | null>(null);
 const [productions, setProductions] = useState([]);
 
- const getProductions = async (query?:string) => {
+const getProductions = async (query?: any) => {
     const farmId = getReadFarmScope(isLoggedIn()?.role);
     if (!farmId) {
         setProductions([] as any);
@@ -38,7 +39,24 @@ const [productions, setProductions] = useState([]);
     } finally {
         setLoading(false);
     }
-}
+};
+
+const getProductionStats = async (query?: any) => {
+    const farmId = getReadFarmScope(isLoggedIn()?.role);
+    if (!farmId) return null;
+    try {
+        const response = await api.get(
+            `/productions/stats/${farmId}?${queryString(query)}`
+        );
+        return response.data?.data ?? response.data;
+    } catch (error: any) {
+        const errorMessage =
+            error.response?.data?.message ||
+            'An error occurred while fetching production stats.';
+        toast.error(errorMessage);
+        return null;
+    }
+};
 const createProduction = async (data: ProductionData) => {
         const farmId = getFarmId();
         if (!farmId) {
@@ -97,5 +115,5 @@ const createProduction = async (data: ProductionData) => {
         }
     };
 
-    return { createProduction, updateProduction, deleteProduction, loading, error ,getProductions,productions};
+    return { createProduction, updateProduction, deleteProduction, loading, error ,getProductions, getProductionStats, productions};
 };

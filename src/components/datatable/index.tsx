@@ -25,6 +25,12 @@ type DataTableProps<Entry> = {
     lastPage: number;
     isLoading: boolean;
     header?: JSX.Element;
+    /** Extra controls on the same row as export buttons + search */
+    actions?: ReactNode;
+    /** Controls placed after export buttons (e.g. period filters) */
+    toolbarLeading?: ReactNode;
+    /** Content rendered between the toolbar and the table (e.g. summary cards) */
+    beforeTable?: ReactNode;
 };
 export default function DataTableV2<Entry>(
     props: DataTableProps<Entry>
@@ -302,42 +308,47 @@ export default function DataTableV2<Entry>(
         <div>
             <div className="panel">
                 {props.header}
-                <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4 p-4 bg-white shadow rounded-lg">
-    <div className="flex flex-wrap items-center gap-3">
-        <button
-            type="button"
-            onClick={() => exportTable('csv')}
-            className="btn btn-primary btn-sm flex items-center gap-2"
-        >
-            <IconFile className="w-5 h-5" />
-            <span>CSV</span>
-        </button>
-        <button
-            type="button"
-            onClick={() => exportTable('txt')}
-            className="btn btn-primary btn-sm flex items-center gap-2"
-        >
-            <IconFile className="w-5 h-5" />
-            <span>TXT</span>
-        </button>
-        <button
-            type="button"
-            className="btn btn-primary btn-sm flex items-center gap-2"
-            onClick={handleDownloadExcel}
-        >
-            <IconFile className="w-5 h-5" />
-            <span>EXCEL</span>
-        </button>
-    </div>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-3 px-3 py-2.5 bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-100 dark:border-gray-700">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => exportTable('csv')}
+                            className="btn btn-primary btn-sm flex items-center gap-1.5"
+                        >
+                            <IconFile className="w-4 h-4" />
+                            <span>CSV</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => exportTable('txt')}
+                            className="btn btn-primary btn-sm flex items-center gap-1.5"
+                        >
+                            <IconFile className="w-4 h-4" />
+                            <span>TXT</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm flex items-center gap-1.5"
+                            onClick={handleDownloadExcel}
+                        >
+                            <IconFile className="w-4 h-4" />
+                            <span>EXCEL</span>
+                        </button>
+                        {props.toolbarLeading}
+                    </div>
 
-    <input
-        type="text"
-        className="form-input w-full md:w-1/3 mt-3 md:mt-0 p-2 border rounded"
-        placeholder="Search..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-    />
-</div>
+                    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:justify-end">
+                        <input
+                            type="text"
+                            className="form-input w-full sm:w-48 lg:w-56 py-1.5 px-2 text-sm border rounded"
+                            placeholder="Search..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+                        {props.actions}
+                    </div>
+                </div>
+                {props.beforeTable}
 
 
                 <div className="datatables">

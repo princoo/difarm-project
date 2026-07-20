@@ -43,6 +43,7 @@ export interface ProductionData {
     productName: string;
     quantity: string;
     productionDate: string;
-    expirationDate: string;
+    expirationDate?: string | null;
+    milkingSession?: 'MORNING' | 'EVENING' | '' | null;
 }
 

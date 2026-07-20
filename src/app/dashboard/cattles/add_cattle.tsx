@@ -150,7 +150,14 @@ const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
   const [resolvingFarm, setResolvingFarm] = useState(false);
 
   const motherSuggestions = useMemo(
-    () => (cattles ?? []).map((cattle: any) => String(cattle.tagNumber)),
+    () =>
+      (cattles ?? [])
+        .filter((cattle: any) =>
+          ["COW", "FEMALE"].includes(
+            String(cattle.gender || "").toUpperCase()
+          )
+        )
+        .map((cattle: any) => String(cattle.tagNumber)),
     [cattles]
   );
 
@@ -488,7 +495,8 @@ const AddCattleModal = ({ isOpen, onClose, handleRefetch, cattles }: any) => {
                           {motherSuggestions.length > 0 && (
                             <p className="text-xs text-gray-500 mt-1">
                               Suggestions appear when cows exist on this farm.
-                              You can also type any tag.
+                              Selecting an existing cow automatically starts her
+                              next lactation cycle from this birth date.
                             </p>
                           )}
                         </div>

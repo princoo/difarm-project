@@ -10,18 +10,32 @@ export const useCattle = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCattle = async (query: any) => {
+  const fetchCattle = async (query: any = {}) => {
     const role = isLoggedIn()?.role;
     const farmId = getReadFarmScope(role);
     if (!farmId) {
       setError("No farm selected. Choose a farm first.");
+      setCattle([]);
       return;
     }
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.get(`/cattles/${farmId}?${queryString(query)}`);
+      const params =
+        typeof query === "string"
+          ? `${query}${query.includes("_t=") ? "" : `${query ? "&" : ""}_t=${Date.now()}`}`
+          : queryString({
+              pageSize: 500,
+              ...query,
+              _t: Date.now(),
+            });
+      const response = await api.get(`/cattles/${farmId}?${params}`, {
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
       setCattle(response.data);
     } catch (error: any) {
       const errorMessage =
@@ -133,3 +147,15 @@ export const fetchCattleDetail = (cattleId: string) =>
 
 export const fetchCattleReport = (cattleId: string) =>
   api.get(`/cattles/cattle/${cattleId}/report`);
+
+export const updateCattleMilkingStatus = (
+  cattleId: string,
+  status: "ACTIVE" | "INACTIVE",
+  effectiveAt: string,
+  cycleStartedAt?: string
+) =>
+  api.patch(`/cattles/${cattleId}/milking-status`, {
+    status,
+    effectiveAt,
+    ...(cycleStartedAt ? { cycleStartedAt } : {}),
+  });

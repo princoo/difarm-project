@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from '@/lib/router-compat';
 import { capitalize } from 'lodash';
 import { fetchCattleReport } from '@/hooks/api/cattle';
@@ -17,6 +17,9 @@ import { RingProgress, Text } from '@mantine/core';
 import {
   Bar,
   BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -30,8 +33,90 @@ import {
   CheckBadgeIcon,
   ScaleIcon,
   BeakerIcon,
+  ArrowTrendingDownIcon,
+  ArrowTrendingUpIcon,
+  MinusIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import { cattlePlaceInfo } from './cattlePlace';
+import LactationCycle from './LactationCycle';
+import MilkingProductionStatus from './MilkingProductionStatus';
+import UpdateCattleModal from './update_cattle';
+import { isLoggedIn } from '@/hooks/api/auth';
+import { useCattle } from '@/hooks/api/cattle';
+import { canUpdateEntity } from '@/utils/permissions';
+
+type MilkTrendDirection = 'up' | 'down' | 'stable' | 'insufficient';
+
+function mapDirection(
+  direction?: string
+): MilkTrendDirection {
+  if (direction === 'increasing' || direction === 'up') return 'up';
+  if (direction === 'decreasing' || direction === 'down') return 'down';
+  if (direction === 'stable') return 'stable';
+  return 'insufficient';
+}
+
+function calculateMilkTrend(
+  dailyMilk: Array<{ date: string; quantity: number }>,
+  serverTrend?: CattleReport['production']['milkTrend']
+) {
+  const days = [...dailyMilk]
+    .filter((day) => Number.isFinite(Number(day.quantity)))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const chartData = days.slice(-14).map((day) => ({
+    ...day,
+    label: new Date(`${day.date}T00:00:00`).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+    }),
+  }));
+
+  if (serverTrend) {
+    return {
+      recentAverage: serverTrend.recentAverage,
+      previousAverage: serverTrend.previousAverage,
+      changePercent: serverTrend.percentageChange,
+      direction: mapDirection(serverTrend.direction),
+      chartData,
+      recentDays: serverTrend.recentDaysWithMilk,
+      previousDays: serverTrend.previousDaysWithMilk,
+    };
+  }
+
+  // Fallback: compare latest 7 recorded days with the previous 7 recorded days
+  const recent = days.slice(-7);
+  const previous = days.slice(Math.max(0, days.length - 14), Math.max(0, days.length - 7));
+  const average = (items: typeof days) =>
+    items.length > 0
+      ? items.reduce((sum, day) => sum + Number(day.quantity), 0) / items.length
+      : 0;
+  const recentAverage = average(recent);
+  const previousAverage = average(previous);
+
+  let direction: MilkTrendDirection = 'insufficient';
+  let changePercent: number | null = null;
+  if (previous.length > 0) {
+    if (previousAverage === 0) {
+      direction = recentAverage > 0 ? 'up' : 'stable';
+    } else {
+      changePercent = ((recentAverage - previousAverage) / previousAverage) * 100;
+      direction =
+        changePercent > 5 ? 'up' : changePercent < -5 ? 'down' : 'stable';
+    }
+  }
+
+  return {
+    recentAverage,
+    previousAverage,
+    changePercent,
+    direction,
+    chartData,
+    recentDays: recent.length,
+    previousDays: previous.length,
+  };
+}
 
 function computeWellnessScore(report: CattleReport): number {
   const status = report.lifeStatus.status;
@@ -133,23 +218,26 @@ export default function CattleDetail() {
   const [error, setError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'production' | 'health' | 'breeding'>('production');
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const { allCattles, fetchAllCattle }: any = useCattle();
+
+  const loadReport = useCallback(async () => {
+    if (!cattleId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchCattleReport(cattleId);
+      setReport(res.data?.data ?? res.data);
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Failed to load cattle report');
+    } finally {
+      setLoading(false);
+    }
+  }, [cattleId]);
 
   useEffect(() => {
-    if (!cattleId) return;
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetchCattleReport(cattleId);
-        setReport(res.data?.data ?? res.data);
-      } catch (e: any) {
-        setError(e.response?.data?.message || 'Failed to load cattle report');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [cattleId]);
+    loadReport();
+  }, [loadReport]);
 
   const wellnessScore = useMemo(() => (report ? computeWellnessScore(report) : 0), [report]);
 
@@ -160,6 +248,15 @@ export default function CattleDetail() {
       { name: 'Feed (est.)', value: Math.round(report.expenses.estimatedFeedPerHead) },
     ];
   }, [report]);
+
+  const milkTrend = useMemo(
+    () =>
+      calculateMilkTrend(
+        report?.production.dailyMilk ?? [],
+        report?.production.milkTrend
+      ),
+    [report]
+  );
 
   const handleDownloadPdf = async () => {
     if (!report) return;
@@ -196,6 +293,9 @@ export default function CattleDetail() {
   }
 
   const cattle = report.profile;
+  const role = isLoggedIn()?.role || '';
+  const canEditCattle = canUpdateEntity('cattle', role);
+  const canManageMilking = canEditCattle;
   const tags = [
     capitalize(cattle.breed || ''),
     capitalize(cattle.gender || ''),
@@ -217,7 +317,6 @@ export default function CattleDetail() {
     },
   ];
 
-  const productionScore = Math.min(100, Math.round(report.production.totalMilk / 5) || 0);
   const careScore = Math.min(100, report.healthRecords.length * 20);
   const efficiencyPct =
     report.economics.milkToFeedRatio != null
@@ -362,6 +461,19 @@ export default function CattleDetail() {
           </SidebarCard>
 
           <div className="space-y-2">
+            {canEditCattle && (
+              <button
+                type="button"
+                className="w-full btn btn-outline-primary py-2.5 gap-2"
+                onClick={() => {
+                  fetchAllCattle();
+                  setIsUpdateModalOpen(true);
+                }}
+              >
+                <PencilSquareIcon className="w-5 h-5" />
+                Edit cattle profile
+              </button>
+            )}
             <button
               type="button"
               className="w-full btn btn-primary py-2.5 gap-2"
@@ -387,7 +499,10 @@ export default function CattleDetail() {
           {/* Top metrics row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <MetricPill value={`${wellnessScore}%`} label="Health index" />
-            <MetricPill value={`${productionScore}%`} label="Production score" />
+            <MetricPill
+              value={`${milkTrend.recentAverage.toFixed(1)}`}
+              label={`Avg milk / day (${milkTrend.recentDays || 0} recent days)`}
+            />
             <MetricPill value={`${efficiencyPct}%`} label="Feed efficiency" />
             <MetricPill value={`${careScore}%`} label="Vet care score" />
             <MetricPill value={`${weightPct}%`} label="Weight index" />
@@ -396,6 +511,109 @@ export default function CattleDetail() {
               label="Farm activity"
             />
           </div>
+
+          {/* Daily milk average and change */}
+          <SidebarCard className="p-5">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Daily milk average
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Latest 7 recorded milking days compared with the preceding 7
+                </p>
+              </div>
+              <div
+                className={`inline-flex self-start items-center gap-2 rounded-xl px-3 py-2 ${
+                  milkTrend.direction === 'up'
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    : milkTrend.direction === 'down'
+                      ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {milkTrend.direction === 'up' ? (
+                  <ArrowTrendingUpIcon className="w-5 h-5" />
+                ) : milkTrend.direction === 'down' ? (
+                  <ArrowTrendingDownIcon className="w-5 h-5" />
+                ) : (
+                  <MinusIcon className="w-5 h-5" />
+                )}
+                <div>
+                  <p className="text-sm font-bold">
+                    {milkTrend.direction === 'insufficient'
+                      ? 'More data needed'
+                      : milkTrend.direction === 'up'
+                        ? 'Increasing'
+                        : milkTrend.direction === 'down'
+                          ? 'Decreasing'
+                          : 'Stable'}
+                    {milkTrend.changePercent != null &&
+                      ` ${Math.abs(milkTrend.changePercent).toFixed(1)}%`}
+                  </p>
+                  <p className="text-[10px] opacity-80">
+                    Previous avg: {milkTrend.previousAverage.toFixed(1)} units/day
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {milkTrend.chartData.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-5 items-center">
+                <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+                  <p className="text-xs text-gray-500">Current daily average</p>
+                  <p className="mt-1 text-3xl font-bold text-primary">
+                    {milkTrend.recentAverage.toFixed(1)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">milk units / day</p>
+                </div>
+                <div className="h-[190px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={milkTrend.chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.25} />
+                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} width={36} allowDecimals />
+                      <Tooltip
+                        formatter={(value: number) => [`${value} units`, 'Milk']}
+                        labelFormatter={(label) => `Date: ${label}`}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="quantity"
+                        name="Daily milk"
+                        stroke="#228B22"
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: '#228B22' }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-sm text-gray-400">
+                Add daily milk production records to calculate the trend.
+              </div>
+            )}
+          </SidebarCard>
+
+          <MilkingProductionStatus
+            cattleId={cattle.id}
+            milking={report.milking}
+            latestInseminationAt={report.breedingRecords[0]?.date}
+            canEdit={canManageMilking}
+            onChanged={loadReport}
+          />
+
+          <LactationCycle
+            cattle={{
+              ...cattle,
+              inseminations: report.breedingRecords,
+              milkingStartedAt: report.milking.latestPeriod?.startedAt,
+              milkingEndedAt: report.milking.latestPeriod?.endedAt,
+            }}
+            currentMilkYield={milkTrend.recentAverage}
+          />
 
           {/* Analysis row — 3 cards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -535,12 +753,18 @@ export default function CattleDetail() {
                   <div className="mb-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-900/40">
                     <p className="text-xs font-semibold uppercase text-gray-500 mb-3">Daily milk pipeline</p>
                     <LifeStageBar
-                      stages={report.production.dailyMilk.slice(0, 6).map((d, i, arr) => ({
-                        label: new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-                        count: d.quantity,
-                        active: true,
-                        current: i === arr.length - 1,
-                      }))}
+                      stages={[...report.production.dailyMilk]
+                        .slice(0, 6)
+                        .reverse()
+                        .map((d, i, arr) => ({
+                          label: new Date(`${d.date}T00:00:00`).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                          }),
+                          count: d.quantity,
+                          active: true,
+                          current: i === arr.length - 1,
+                        }))}
                     />
                   </div>
                 )}
@@ -707,6 +931,16 @@ export default function CattleDetail() {
           </div>
         </main>
       </div>
+
+      {canEditCattle && (
+        <UpdateCattleModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => setIsUpdateModalOpen(false)}
+          cattle={cattle}
+          cattles={allCattles?.data?.data ?? []}
+          handleRefetch={loadReport}
+        />
+      )}
     </div>
   );
 }

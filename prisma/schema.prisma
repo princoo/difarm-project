@@ -108,6 +108,7 @@ model Farm {
   vaccinations  Vaccination[]
   inseminations  Insemination[]
   veterinarians  Veterinarian[]
+  milkingPeriods MilkingPeriod[]
 
   @@index([ownerId])
 }
@@ -142,6 +143,8 @@ model Cattle {
   purchaseDate     DateTime?
   price            Float?
   motherTag        String?
+  milkingStatus    MilkingStatus @default(INACTIVE)
+  milkingStatusChangedAt DateTime @default(now())
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
@@ -150,6 +153,7 @@ model Cattle {
   productions      Production[]
   vaccinations  Vaccination[]
   inseminations  Insemination[]
+  milkingPeriods MilkingPeriod[]
 
   @@index([farmId])
 }
@@ -162,12 +166,41 @@ enum CattleStatus {
   DECEASED
 }
 
+enum MilkingStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model MilkingPeriod {
+  id        String   @id @default(uuid())
+  cattleId  String
+  farmId    String
+  startedAt DateTime
+  endedAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cattle Cattle @relation(fields: [cattleId], references: [id], onDelete: Cascade)
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([cattleId, startedAt])
+  @@index([farmId, startedAt])
+  @@index([cattleId, endedAt])
+}
+
+enum MilkingSession {
+  MORNING
+  EVENING
+}
+
 model Production {
   id              String   @id @default(uuid())
   farmId          String
   cattleId        String
   productName     String
   quantity        Int
+  /// Morning or evening milking; null for non-milk products
+  milkingSession  MilkingSession?
   productionDate  DateTime
   expirationDate  DateTime?
   createdAt       DateTime @default(now())
@@ -178,21 +211,27 @@ model Production {
 
   @@index([farmId])
   @@index([cattleId])
+  @@index([cattleId, productionDate, milkingSession])
 }
 
 model ProductionTransaction {
   id              String   @id @default(uuid())
   farmId          String
   productType     ProductType
+  /// How production was used that day
+  usageCategory   ProductionUsageCategory @default(SOLD_TO_DAIRY)
   /// Snapshot of that day's produced quantity (or stock) at sale time
   total           Float
   quantity        Float
-  /// Expected sale amount (quantity × pricePerUnit)
+  /// Unit price used for dairy sales (null for on-farm / umucunda use)
+  unitPrice       Float?
+  /// Expected sale amount (quantity × unitPrice) — 0 for non-sale usage
   value           Float
   /// Amount actually paid; null = treat as fully paid (legacy rows)
   amountPaid      Float?
   /// Production day this sale is deducted from
   date            DateTime  @default(now())
+  /// Dairy name for SOLD_TO_DAIRY; label for other usages
   consumer        String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -201,6 +240,7 @@ model ProductionTransaction {
 
   @@index([farmId])
   @@index([farmId, productType, date])
+  @@index([farmId, usageCategory])
 }
 
 model ProductionTotals {
@@ -222,6 +262,12 @@ enum ProductType {
   MEAT
   DUNG
   LIQUIDMANURE
+}
+
+enum ProductionUsageCategory {
+  SOLD_TO_DAIRY
+  USED_ON_FARM
+  CONSUMED_BY_UMUCUNDA
 }
 
 model WastesLog {

@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import ResponseHandler from "../util/responseHandler";
 import prisma from "../db/prisma";
-import cattleService from "../service/cattle.service";
+import cattleService, {
+  MilkingStatusError,
+} from "../service/cattle.service";
 import { StatusCodes } from "http-status-codes";
+import { MilkingStatus } from "@prisma/client";
 import { paginate } from "../util/paginate";
 import { searchUtil } from "../util/search";
 import { farmWhere } from "../util/farmScope";
@@ -64,6 +67,13 @@ export const createCattle = async (req: Request, res: Response) => {
         motherTag: motherTag?.trim() || null,
       },
     });
+    if (motherTag?.trim() && DOB) {
+      await cattleService.recordCalvingFromBirth({
+        motherTag: motherTag.trim(),
+        farmId,
+        calvedAt: new Date(DOB),
+      });
+    }
     responseHandler.setSuccess(
       StatusCodes.CREATED,
       "Cattle created successfully",
@@ -89,7 +99,7 @@ export const getCattles = async (req: Request, res: Response) => {
   const pageSize = asNumber(req.query.pageSize, 10);
   const search = asOptionalString(req.query.search);
   const currentPage = Math.max(1, page || 1);
-  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 500);
 
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
@@ -114,7 +124,17 @@ export const getCattles = async (req: Request, res: Response) => {
         ...farmScope,
         ...searchCondition,
       },
-      include: { farm: true },
+      include: {
+        farm: true,
+        inseminations: {
+          select: { date: true },
+          orderBy: { date: 'desc' },
+        },
+        milkingPeriods: {
+          select: { startedAt: true, endedAt: true },
+          orderBy: { startedAt: 'desc' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip,
       take,
@@ -188,6 +208,75 @@ export const getCattleReport = async (req: Request, res: Response) => {
     responseHandler.setError(
       StatusCodes.INTERNAL_SERVER_ERROR,
       "Error fetching cattle report"
+    );
+    return responseHandler.send(res);
+  }
+};
+
+export const updateMilkingStatus = async (req: Request, res: Response) => {
+  const cattleId = asString(req.params.cattleId);
+  const responseHandler = new ResponseHandler();
+  const status = String(req.body?.status || "").toUpperCase();
+  const effectiveAt = req.body?.effectiveAt
+    ? new Date(req.body.effectiveAt)
+    : new Date();
+  const cycleStartedAt = req.body?.cycleStartedAt
+    ? new Date(req.body.cycleStartedAt)
+    : null;
+
+  if (!Object.values(MilkingStatus).includes(status as MilkingStatus)) {
+    responseHandler.setError(
+      StatusCodes.BAD_REQUEST,
+      "Milking status must be ACTIVE or INACTIVE"
+    );
+    return responseHandler.send(res);
+  }
+  if (
+    Number.isNaN(effectiveAt.getTime()) ||
+    effectiveAt.getTime() > Date.now() + 5 * 60 * 1000
+  ) {
+    responseHandler.setError(
+      StatusCodes.BAD_REQUEST,
+      "Effective date must be a valid date that is not in the future"
+    );
+    return responseHandler.send(res);
+  }
+  if (
+    cycleStartedAt &&
+    (Number.isNaN(cycleStartedAt.getTime()) ||
+      cycleStartedAt.getTime() > Date.now() + 5 * 60 * 1000)
+  ) {
+    responseHandler.setError(
+      StatusCodes.BAD_REQUEST,
+      "Calving / start date must be a valid date that is not in the future"
+    );
+    return responseHandler.send(res);
+  }
+
+  try {
+    const result = await cattleService.setMilkingStatus(
+      cattleId,
+      status as MilkingStatus,
+      effectiveAt,
+      cycleStartedAt
+    );
+    responseHandler.setSuccess(
+      StatusCodes.OK,
+      status === MilkingStatus.ACTIVE
+        ? "Lactation cycle started from the calving date"
+        : "Dry / rest date recorded — cycle chart updated",
+      result
+    );
+    return responseHandler.send(res);
+  } catch (error) {
+    if (error instanceof MilkingStatusError) {
+      responseHandler.setError(StatusCodes.BAD_REQUEST, error.message);
+      return responseHandler.send(res);
+    }
+    console.error("Error updating milking status:", error);
+    responseHandler.setError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Error updating milk production status"
     );
     return responseHandler.send(res);
   }

@@ -2,7 +2,7 @@
  * Role-based access control for DiFarm.
  * SUPERADMIN — full platform access, activates farms & accounts.
  * ADMIN (Farm Admin) — owns farms, creates managers, farm-scoped data.
- * MANAGER — assigned farm(s): view + add operational data only (no edit/delete).
+ * MANAGER — assigned farm(s): view + add operational data; may edit cattle profiles.
  * VETERINARIAN — cattle view + health module on assigned farm.
  */
 
@@ -67,11 +67,11 @@ const canCreate: Partial<Record<Entity, Role[]>> = {
   activityLogs: [],
 };
 
-/** Edit/delete: farm admin or above. Managers contact admin to change records. */
+/** Edit: farm admin or above, except cattle (managers may edit cattle profiles). */
 const canUpdate: Partial<Record<Entity, Role[]>> = {
   users: ['SUPERADMIN', 'ADMIN'],
   farms: ['SUPERADMIN', 'ADMIN'],
-  cattle: ['SUPERADMIN', 'ADMIN'],
+  cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   production: ['SUPERADMIN', 'ADMIN'],
   productionTotals: ['SUPERADMIN', 'ADMIN'],
   productionTransactions: ['SUPERADMIN', 'ADMIN'],
@@ -156,18 +156,21 @@ export function canAccessRoute(path: string, role?: string): boolean {
 }
 
 export function canCreateEntity(entity: Entity, role: string): boolean {
+  const normalized = String(role || '').toUpperCase() as Role;
   const roles = canCreate[entity];
-  return Array.isArray(roles) && roles.includes(role as Role);
+  return Array.isArray(roles) && roles.includes(normalized);
 }
 
 export function canUpdateEntity(entity: Entity, role: string): boolean {
+  const normalized = String(role || '').toUpperCase() as Role;
   const roles = canUpdate[entity];
-  return Array.isArray(roles) && roles.includes(role as Role);
+  return Array.isArray(roles) && roles.includes(normalized);
 }
 
 export function canDeleteEntity(entity: Entity, role: string): boolean {
+  const normalized = String(role || '').toUpperCase() as Role;
   const roles = canDelete[entity];
-  return Array.isArray(roles) && roles.includes(role as Role);
+  return Array.isArray(roles) && roles.includes(normalized);
 }
 
 export function canViewEntity(entity: Entity, role: string): boolean {

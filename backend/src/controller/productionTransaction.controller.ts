@@ -18,34 +18,146 @@ const addTransaction = async (
   _next: NextFunction
 ) => {
   const farmId = asString(req.params.farmId);
-  const { quantity, productType, date, consumer, amountPaid } = req.body;
-  const amountValue = quantity * req.productInfo?.pricePerUnit!;
+  const {
+    quantity,
+    productType,
+    date,
+    consumer,
+    amountPaid,
+    usageCategory,
+    unitPrice,
+  } = req.body;
+
+  const category = usageCategory || "SOLD_TO_DAIRY";
+  const isDairy = category === "SOLD_TO_DAIRY";
   const daily = (req as any).dailyInfo as
     | { produced: number; sold: number; remaining: number }
     | undefined;
 
-  const paid =
-    amountPaid === undefined || amountPaid === null
+  const resolvedUnitPrice = isDairy
+    ? Number(unitPrice) > 0
+      ? Number(unitPrice)
+      : Number(req.productInfo?.pricePerUnit || 0)
+    : 0;
+  const amountValue = isDairy ? quantity * resolvedUnitPrice : 0;
+
+  const paid = !isDairy
+    ? 0
+    : amountPaid === undefined || amountPaid === null
       ? amountValue
       : Math.min(Number(amountPaid), amountValue);
+
+  const consumerLabel = isDairy
+    ? String(consumer || "").trim()
+    : category === "USED_ON_FARM"
+      ? String(consumer || "").trim() || "On farm"
+      : String(consumer || "").trim() || "Umucunda";
 
   const body: ProdTransactionBody = {
     farmId,
     productType,
+    usageCategory: category,
     quantity,
-    consumer,
+    consumer: consumerLabel,
     date,
+    unitPrice: isDairy ? resolvedUnitPrice : null,
     value: amountValue,
     amountPaid: paid,
-    // Snapshot day's produced total for this sale row
     total: daily?.produced ?? req.productInfo?.totalQuantity ?? 0,
   };
 
   const data = await productionTransactionService.recordTransaction(body);
   responseHandler.setSuccess(
     StatusCodes.CREATED,
-    "Sale recorded successfully",
+    "Production usage recorded successfully",
     data
+  );
+  return responseHandler.send(res);
+};
+
+const addBatchUsage = async (
+  req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  const farmId = asString(req.params.farmId);
+  const { productType, date, usages } = req.body as {
+    productType: string;
+    date: string;
+    usages: Array<{
+      usageCategory: string;
+      quantity: number;
+      consumer?: string;
+      unitPrice?: number;
+      amountPaid?: number;
+    }>;
+  };
+
+  const daily = (req as any).dailyInfo as
+    | { produced: number; sold: number; remaining: number }
+    | undefined;
+
+  const categories = [
+    "SOLD_TO_DAIRY",
+    "USED_ON_FARM",
+    "CONSUMED_BY_UMUCUNDA",
+  ] as const;
+
+  const byCategory = new Map(
+    (usages || []).map((line) => [line.usageCategory, line])
+  );
+
+  const created: Awaited<
+    ReturnType<typeof productionTransactionService.recordTransaction>
+  >[] = [];
+  for (const category of categories) {
+    const line = byCategory.get(category) || {
+      usageCategory: category,
+      quantity: 0,
+    };
+    const quantity = Number(line.quantity) || 0;
+    const isDairy = category === "SOLD_TO_DAIRY";
+    const resolvedUnitPrice = isDairy
+      ? Number(line.unitPrice) > 0
+        ? Number(line.unitPrice)
+        : Number(req.productInfo?.pricePerUnit || 0)
+      : 0;
+    const amountValue =
+      isDairy && quantity > 0 ? quantity * resolvedUnitPrice : 0;
+    const paid = !isDairy
+      ? 0
+      : line.amountPaid === undefined || line.amountPaid === null
+        ? amountValue
+        : Math.min(Number(line.amountPaid), amountValue);
+
+    const consumerLabel = isDairy
+      ? quantity > 0
+        ? String(line.consumer || "").trim()
+        : String(line.consumer || "").trim() || "—"
+      : category === "USED_ON_FARM"
+        ? "On farm"
+        : "Umucunda";
+
+    const body: ProdTransactionBody = {
+      farmId,
+      productType: productType as any,
+      usageCategory: category,
+      quantity,
+      consumer: consumerLabel,
+      date,
+      unitPrice: isDairy ? (quantity > 0 ? resolvedUnitPrice : 0) : null,
+      value: amountValue,
+      amountPaid: paid,
+      total: daily?.produced ?? req.productInfo?.totalQuantity ?? 0,
+    };
+
+    created.push(await productionTransactionService.recordTransaction(body));
+  }
+
+  responseHandler.setSuccess(
+    StatusCodes.CREATED,
+    "Production usage recorded for all categories",
+    created
   );
   return responseHandler.send(res);
 };
@@ -53,6 +165,11 @@ const addTransaction = async (
 const dailySales = async (req: Request, res: Response, _next: NextFunction) => {
   const farmId = asString(req.params.farmId);
   const user = (req as any).user.data;
+  const from = req.query.from ? String(req.query.from) : undefined;
+  const to = req.query.to ? String(req.query.to) : undefined;
+  const productType = req.query.productType
+    ? String(req.query.productType).toUpperCase()
+    : undefined;
 
   try {
     if (
@@ -68,12 +185,13 @@ const dailySales = async (req: Request, res: Response, _next: NextFunction) => {
 
     const rows = await productionTransactionService.getDailySales(
       farmId,
-      user.role
+      user.role,
+      { from, to, productType }
     );
 
     responseHandler.setSuccess(
       StatusCodes.OK,
-      "Daily production sales retrieved successfully.",
+      "Daily production usage retrieved successfully.",
       {
         data: rows,
         total: rows.length,
@@ -87,7 +205,46 @@ const dailySales = async (req: Request, res: Response, _next: NextFunction) => {
     console.error("Error retrieving daily sales:", error);
     responseHandler.setError(
       StatusCodes.INTERNAL_SERVER_ERROR,
-      "An error occurred while retrieving daily sales."
+      "An error occurred while retrieving daily usage."
+    );
+  }
+  return responseHandler.send(res);
+};
+
+const usageStats = async (req: Request, res: Response, _next: NextFunction) => {
+  const farmId = asString(req.params.farmId);
+  const user = (req as any).user.data;
+  const from = req.query.from ? String(req.query.from) : undefined;
+  const to = req.query.to ? String(req.query.to) : undefined;
+  const productName = req.query.productName
+    ? String(req.query.productName).toUpperCase()
+    : undefined;
+
+  try {
+    if (farmId === ALL_FARMS_SCOPE && user.role !== Roles.SUPERADMIN) {
+      responseHandler.setError(
+        StatusCodes.FORBIDDEN,
+        "You do not have permission to view all farms."
+      );
+      return responseHandler.send(res);
+    }
+
+    const data = await productionTransactionService.getUsageStats(
+      farmId,
+      user.role,
+      { from, to, productName }
+    );
+
+    responseHandler.setSuccess(
+      StatusCodes.OK,
+      "Usage stats retrieved successfully.",
+      data
+    );
+  } catch (error) {
+    console.error("Error retrieving usage stats:", error);
+    responseHandler.setError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "An error occurred while retrieving usage stats."
     );
   }
   return responseHandler.send(res);
@@ -243,7 +400,9 @@ const removeTransactions = async (
 
 export default {
   addTransaction,
+  addBatchUsage,
   dailySales,
+  usageStats,
   allTransactions,
   singleTransactions,
   updateTransactions,

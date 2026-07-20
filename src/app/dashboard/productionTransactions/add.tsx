@@ -1,19 +1,45 @@
 import { z } from 'zod';
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { InputField } from '@/components/input';
 import { useProductionTransaction } from '@/hooks/api/production_transaction';
 import type { DailySaleRow } from '@/hooks/api/production_transaction';
 
-const transactionSchema = z.object({
-  quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
-  productType: z.string().nonempty('Product is required'),
-  date: z.string().nonempty('Production day is required'),
-  consumer: z.string().nonempty('Buyer is required'),
-  amountPaid: z.number().min(0, 'Amount paid cannot be negative'),
-});
+const nonNegNumber = z.preprocess(
+  (v) => (v === '' || v === null || v === undefined || Number.isNaN(v) ? 0 : Number(v)),
+  z.number().min(0)
+);
+
+const usageFormSchema = z
+  .object({
+    productType: z.string().nonempty('Product is required'),
+    date: z.string().nonempty('Production day is required'),
+    dairyQuantity: nonNegNumber,
+    unitPrice: nonNegNumber,
+    dairyName: z.string().optional(),
+    farmQuantity: nonNegNumber,
+    umucundaQuantity: nonNegNumber,
+  })
+  .superRefine((data, ctx) => {
+    if (data.dairyQuantity > 0) {
+      if (!data.dairyName?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Dairy name is required when quantity sold > 0',
+          path: ['dairyName'],
+        });
+      }
+      if (!(Number(data.unitPrice) > 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Unit price is required when quantity sold > 0',
+          path: ['unitPrice'],
+        });
+      }
+    }
+  });
 
 export type SaleDraft = Partial<DailySaleRow> & {
   date?: string;
@@ -26,77 +52,89 @@ interface AddProductionTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   handleRefetch: () => void;
-  /** Prefill from a daily row (Sell action) */
   draft?: SaleDraft | null;
 }
 
 const AddProductionTransactionModal: React.FC<
   AddProductionTransactionModalProps
 > = ({ isOpen, onClose, handleRefetch, draft }) => {
-  const { createProductionTransaction, loading } = useProductionTransaction();
+  const { createProductionUsageBatch, loading } = useProductionTransaction();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
     watch,
   } = useForm({
-    resolver: zodResolver(transactionSchema),
+    resolver: zodResolver(usageFormSchema),
     defaultValues: {
-      quantity: 0,
-      productType: '',
+      productType: 'MILK',
       date: '',
-      consumer: '',
-      amountPaid: 0,
+      dairyQuantity: 0,
+      unitPrice: 0,
+      dairyName: '',
+      farmQuantity: 0,
+      umucundaQuantity: 0,
     },
   });
 
-  const quantity = watch('quantity');
-  const pricePerUnit = draft?.pricePerUnit ?? 0;
+  const dairyQuantity = watch('dairyQuantity');
+  const farmQuantity = watch('farmQuantity');
+  const umucundaQuantity = watch('umucundaQuantity');
+  const unitPrice = watch('unitPrice');
   const remaining = draft?.remaining;
-  const estimatedValue =
-    Number(quantity) > 0 && pricePerUnit > 0
-      ? Number(quantity) * pricePerUnit
-      : 0;
+
+  const dairyRevenue = useMemo(() => {
+    const qty = Number(dairyQuantity) || 0;
+    const price = Number(unitPrice) || 0;
+    return qty > 0 && price > 0 ? qty * price : 0;
+  }, [dairyQuantity, unitPrice]);
+
+  const totalUsed =
+    (Number(dairyQuantity) || 0) +
+    (Number(farmQuantity) || 0) +
+    (Number(umucundaQuantity) || 0);
 
   useEffect(() => {
     if (!isOpen) return;
     const today = new Date().toISOString().slice(0, 10);
-    const qtyDefault =
-      draft?.remaining != null && draft.remaining > 0 ? draft.remaining : 0;
-    const valueDefault =
-      qtyDefault > 0 && (draft?.pricePerUnit ?? 0) > 0
-        ? qtyDefault * (draft?.pricePerUnit ?? 0)
-        : 0;
     reset({
-      quantity: qtyDefault,
-      productType: draft?.productType ?? '',
+      productType: draft?.productType ?? 'MILK',
       date: draft?.date ?? today,
-      consumer: '',
-      amountPaid: valueDefault,
+      dairyQuantity: 0,
+      unitPrice: draft?.pricePerUnit ?? 0,
+      dairyName: '',
+      farmQuantity: 0,
+      umucundaQuantity: 0,
     });
   }, [isOpen, draft, reset]);
 
-  useEffect(() => {
-    if (!isOpen || pricePerUnit <= 0) return;
-    if (Number(quantity) > 0) {
-      setValue('amountPaid', Number(quantity) * pricePerUnit);
-    }
-  }, [quantity, pricePerUnit, isOpen, setValue]);
-
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: z.infer<typeof usageFormSchema>) => {
     try {
-      if (remaining != null && data.quantity > remaining) {
+      if (remaining != null && totalUsed > remaining) {
         return;
       }
-      await createProductionTransaction({
-        quantity: data.quantity,
+      await createProductionUsageBatch({
         productType: data.productType,
         date: data.date,
-        consumer: data.consumer,
-        amountPaid: data.amountPaid,
+        usages: [
+          {
+            usageCategory: 'SOLD_TO_DAIRY',
+            quantity: Number(data.dairyQuantity) || 0,
+            unitPrice: Number(data.unitPrice) || 0,
+            consumer: data.dairyName?.trim() || '',
+            amountPaid: dairyRevenue,
+          },
+          {
+            usageCategory: 'USED_ON_FARM',
+            quantity: Number(data.farmQuantity) || 0,
+          },
+          {
+            usageCategory: 'CONSUMED_BY_UMUCUNDA',
+            quantity: Number(data.umucundaQuantity) || 0,
+          },
+        ],
       });
       onClose();
       handleRefetch();
@@ -130,109 +168,142 @@ const AddProductionTransactionModal: React.FC<
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md p-6 overflow-hidden text-left mt-4 align-middle transition-all transform bg-white shadow-xl rounded">
+              <Dialog.Panel className="w-full max-w-lg p-6 overflow-hidden text-left mt-4 align-middle transition-all transform bg-white shadow-xl rounded">
                 <Dialog.Title
                   as="h3"
                   className="text-lg font-medium leading-6 text-gray-900"
                 >
-                  Record Sale
+                  Production usage
                 </Dialog.Title>
-                <p className="mt-1 text-sm text-gray-500">
-                  Sell from that day&apos;s total production. Paid can be partial.
-                </p>
                 {remaining != null && (
                   <p className="mt-2 text-sm text-gray-700">
-                    Remaining unsold this day:{' '}
+                    Remaining this day:{' '}
                     <span className="font-semibold">{remaining}</span>
-                    {pricePerUnit > 0 && (
-                      <>
+                    {totalUsed > 0 && (
+                      <span className="text-gray-500">
                         {' '}
-                        · Price:{' '}
-                        <span className="font-semibold">
-                          {pricePerUnit.toLocaleString()} / unit
-                        </span>
-                      </>
+                        · Total entered: {totalUsed}
+                      </span>
                     )}
                   </p>
                 )}
+
                 <form
                   onSubmit={handleSubmit(onSubmit)}
-                  className="mt-4 space-y-3"
+                  className="mt-3 space-y-3"
                 >
-                  <InputField
-                    label="Production day"
-                    name="date"
-                    placeholder="YYYY-MM-DD"
-                    type="date"
-                    error={errors.date?.message}
-                    registration={register('date')}
-                  />
-                  <div>
-                    <label
-                      htmlFor="productType"
-                      className="block text-sm font-bold text-gray-700"
-                    >
-                      Product
-                    </label>
-                    <select
-                      id="productType"
-                      {...register('productType')}
-                      className="mt-1 block w-full px-3 py-2 border text-gray-700 border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
-                    >
-                      <option value="">Select Product</option>
-                      <option value="MILK">Milk</option>
-                      <option value="MEAT">Meat</option>
-                      <option value="DUNG">Dung</option>
-                      <option value="LIQUIDMANURE">Liquid manure</option>
-                    </select>
-                    {errors.productType && (
-                      <p className="text-sm text-red-600">
-                        {errors.productType.message ?? 'Product is required'}
-                      </p>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                    <InputField
+                      label="Production day"
+                      name="date"
+                      type="date"
+                      className="!my-0"
+                      error={errors.date?.message}
+                      registration={register('date')}
+                    />
+                    <div className="my-0">
+                      <label
+                        htmlFor="productType"
+                        className="block text-sm font-bold"
+                      >
+                        Product
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="productType"
+                          {...register('productType')}
+                          className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+                        >
+                          <option value="MILK">Milk</option>
+                          <option value="MEAT">Meat</option>
+                          <option value="DUNG">Dung</option>
+                          <option value="LIQUIDMANURE">Liquid manure</option>
+                        </select>
+                      </div>
+                      {errors.productType && (
+                        <p className="text-red-500 text-sm">
+                          {errors.productType.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <InputField
-                    label="Quantity sold"
-                    name="quantity"
-                    placeholder="Enter quantity"
-                    type="number"
-                    error={
-                      remaining != null &&
-                      Number(quantity) > remaining
-                        ? `Cannot exceed remaining (${remaining})`
-                        : errors.quantity?.message
-                    }
-                    registration={register('quantity', {
-                      valueAsNumber: true,
-                    })}
-                  />
-                  {estimatedValue > 0 && (
-                    <p className="text-sm text-gray-600">
-                      Sale value:{' '}
-                      <span className="font-semibold">
-                        {estimatedValue.toLocaleString()}
-                      </span>
+
+                  {/* Sold to dairy */}
+                  <section className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+                    <h4 className="text-sm font-semibold text-primary text-center">
+                      Sold to dairy
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3 items-start">
+                      <InputField
+                        label="Quantity sold"
+                        name="dairyQuantity"
+                        type="number"
+                        className="!my-0"
+                        error={errors.dairyQuantity?.message}
+                        registration={register('dairyQuantity', {
+                          valueAsNumber: true,
+                        })}
+                      />
+                      <InputField
+                        label="Unit price"
+                        name="unitPrice"
+                        type="number"
+                        className="!my-0"
+                        error={errors.unitPrice?.message}
+                        registration={register('unitPrice', {
+                          valueAsNumber: true,
+                        })}
+                      />
+                    </div>
+                    <InputField
+                      label="Dairy name"
+                      name="dairyName"
+                      type="text"
+                      placeholder="Name of the dairy"
+                      error={errors.dairyName?.message}
+                      registration={register('dairyName')}
+                    />
+                  </section>
+
+                  {/* Used on farm */}
+                  <section className="rounded-lg border border-sky-300/50 bg-sky-50/60 p-3 space-y-2">
+                    <h4 className="text-sm font-semibold text-sky-700 text-center">
+                      Used on farm
+                    </h4>
+                    <InputField
+                      label="Quantity used"
+                      name="farmQuantity"
+                      type="number"
+                      error={errors.farmQuantity?.message}
+                      registration={register('farmQuantity', {
+                        valueAsNumber: true,
+                      })}
+                    />
+                  </section>
+
+                  {/* Consumed by umucunda */}
+                  <section className="rounded-lg border border-amber-300/50 bg-amber-50/60 p-3 space-y-2">
+                    <h4 className="text-sm font-semibold text-amber-800 text-center">
+                      Consumed by umucunda
+                    </h4>
+                    <InputField
+                      label="Quantity consumed"
+                      name="umucundaQuantity"
+                      type="number"
+                      error={errors.umucundaQuantity?.message}
+                      registration={register('umucundaQuantity', {
+                        valueAsNumber: true,
+                      })}
+                    />
+                  </section>
+
+                  {remaining != null && totalUsed > remaining && (
+                    <p className="text-sm text-red-600">
+                      Total ({totalUsed}) cannot exceed remaining ({remaining}).
                     </p>
                   )}
-                  <InputField
-                    label="Amount paid"
-                    name="amountPaid"
-                    placeholder="Amount paid now"
-                    type="number"
-                    error={errors.amountPaid?.message}
-                    registration={register('amountPaid', {
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <InputField
-                    label="Buyer"
-                    name="consumer"
-                    placeholder="Who bought this product"
-                    type="text"
-                    error={errors.consumer?.message}
-                    registration={register('consumer')}
-                  />
-                  <div className="mt-4 flex justify-end space-x-2">
+
+                  <div className="mt-2 flex justify-end space-x-2">
                     <button
                       type="button"
                       className="btn btn-outline-danger"
@@ -245,10 +316,10 @@ const AddProductionTransactionModal: React.FC<
                       className="btn btn-primary"
                       disabled={
                         loading ||
-                        (remaining != null && Number(quantity) > remaining)
+                        (remaining != null && totalUsed > remaining)
                       }
                     >
-                      {loading ? 'Saving…' : 'Save sale'}
+                      {loading ? 'Saving…' : 'Save usage'}
                     </button>
                   </div>
                 </form>

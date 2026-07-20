@@ -52,7 +52,11 @@ export const useProductionTransaction = () => {
     }
   };
 
-  const getDailySales = async () => {
+  const getDailySales = async (query?: {
+    from?: string;
+    to?: string;
+    productType?: string;
+  }) => {
     const farmId = getReadFarmScope(isLoggedIn()?.role);
     if (!farmId) {
       setDailySales([]);
@@ -62,8 +66,9 @@ export const useProductionTransaction = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get(`/production-transaction/${farmId}/daily`);
-      // Axios body: { status, message, data: { data: rows, total, ... } }
+      const response = await api.get(
+        `/production-transaction/${farmId}/daily?${queryString(query)}`
+      );
       const rows = response.data?.data?.data ?? response.data?.data ?? [];
       setDailySales(Array.isArray(rows) ? rows : []);
     } catch (error: any) {
@@ -77,10 +82,31 @@ export const useProductionTransaction = () => {
     }
   };
 
+  const getUsageStats = async (query?: {
+    from?: string;
+    to?: string;
+    productName?: string;
+  }) => {
+    const farmId = getReadFarmScope(isLoggedIn()?.role);
+    if (!farmId) return null;
+    try {
+      const response = await api.get(
+        `/production-transaction/${farmId}/usage-stats?${queryString(query)}`
+      );
+      return response.data?.data ?? response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred while fetching usage stats.';
+      toast.error(errorMessage);
+      return null;
+    }
+  };
+
   const createProductionTransaction = async (data: any) => {
     const farmId = getFarmId();
     if (!farmId) {
-      toast.error('Select a specific farm before recording a sale.');
+      toast.error('Select a specific farm before recording production usage.');
       return;
     }
     setLoading(true);
@@ -90,12 +116,49 @@ export const useProductionTransaction = () => {
         `/production-transaction/${farmId}`,
         data
       );
-      toast.success('Sale recorded successfully');
+      toast.success('Production usage recorded successfully');
       return response.data;
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
-        'An error occurred while recording the sale.';
+        'An error occurred while recording production usage.';
+      toast.error(errorMessage);
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createProductionUsageBatch = async (data: {
+    productType: string;
+    date: string;
+    usages: Array<{
+      usageCategory: string;
+      quantity: number;
+      consumer?: string;
+      unitPrice?: number;
+      amountPaid?: number;
+    }>;
+  }) => {
+    const farmId = getFarmId();
+    if (!farmId) {
+      toast.error('Select a specific farm before recording production usage.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.post(
+        `/production-transaction/${farmId}/batch`,
+        data
+      );
+      toast.success('Production usage recorded for all categories');
+      return response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        'An error occurred while recording production usage.';
       toast.error(errorMessage);
       setError(errorMessage);
       throw error;
@@ -144,7 +207,9 @@ export const useProductionTransaction = () => {
     dailySales,
     getProductionTransactions,
     getDailySales,
+    getUsageStats,
     createProductionTransaction,
+    createProductionUsageBatch,
     updateProductionTransaction,
     deleteProductionTransaction,
     loading,

@@ -19,6 +19,32 @@ export interface CattleReport {
     type: string;
     veterinarian?: { name: string; phone: string } | null;
   }>;
+  milking: {
+    status: 'ACTIVE' | 'INACTIVE';
+    statusChangedAt: string;
+    currentPeriod: {
+      id: string;
+      cattleId: string;
+      farmId: string;
+      startedAt: string;
+      endedAt?: string | null;
+    } | null;
+    latestPeriod: {
+      id: string;
+      cattleId: string;
+      farmId: string;
+      startedAt: string;
+      endedAt?: string | null;
+    } | null;
+    currentPeriodDays: number;
+    periods: Array<{
+      id: string;
+      cattleId: string;
+      farmId: string;
+      startedAt: string;
+      endedAt?: string | null;
+    }>;
+  };
   production: {
     records: Array<{
       id: string;
@@ -32,6 +58,15 @@ export interface CattleReport {
       productionDate: string;
     }>;
     dailyMilk: Array<{ date: string; quantity: number }>;
+    milkTrend?: {
+      recentAverage: number;
+      previousAverage: number;
+      percentageChange: number | null;
+      direction: 'increasing' | 'decreasing' | 'stable' | 'insufficient';
+      windowDays: number;
+      recentDaysWithMilk: number;
+      previousDaysWithMilk: number;
+    };
     totalMilk: number;
     totalProduction: number;
   };

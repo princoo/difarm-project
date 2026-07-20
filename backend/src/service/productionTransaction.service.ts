@@ -2,26 +2,30 @@ import { ProdTransactionBody } from "../interface/prodTransaction.interface";
 import prisma from "../db/prisma";
 import { ProductType } from "@prisma/client";
 import productionTotalsService from "./productionTotals.service";
-import { buildDailySaleRows, getDailyRemaining } from "./dailyProductionSales.service";
+import { buildDailySaleRows, buildUsageStats, getDailyRemaining } from "./dailyProductionSales.service";
 
 const recordTransaction = async (data: ProdTransactionBody) => {
   const result = await prisma.productionTransaction.create({
     data: {
       farmId: data.farmId,
       productType: data.productType,
+      usageCategory: data.usageCategory || "SOLD_TO_DAIRY",
       total: data.total,
       quantity: data.quantity,
+      unitPrice: data.unitPrice ?? null,
       value: data.value,
       amountPaid: data.amountPaid ?? null,
       date: data.date ? new Date(data.date) : new Date(),
       consumer: data.consumer,
     },
   });
-  await productionTotalsService.recordAmount(
-    data.farmId,
-    data.productType,
-    -data.quantity
-  );
+  if (Number(data.quantity) > 0) {
+    await productionTotalsService.recordAmount(
+      data.farmId,
+      data.productType,
+      -data.quantity
+    );
+  }
   return result;
 };
 
@@ -51,6 +55,8 @@ const updateTransactions = async (id: string, data: Partial<ProdTransactionBody>
       ...(data.consumer != null ? { consumer: data.consumer } : {}),
       ...(data.date != null ? { date: new Date(data.date) } : {}),
       ...(data.amountPaid !== undefined ? { amountPaid: data.amountPaid } : {}),
+      ...(data.usageCategory != null ? { usageCategory: data.usageCategory } : {}),
+      ...(data.unitPrice !== undefined ? { unitPrice: data.unitPrice } : {}),
     },
   });
   return result;
@@ -81,8 +87,20 @@ const getFarmProductionRecord = async (
   return result;
 };
 
-const getDailySales = async (farmId: string, role?: string) => {
-  return buildDailySaleRows(farmId, role);
+const getDailySales = async (
+  farmId: string,
+  role?: string,
+  filters?: { from?: string; to?: string; productType?: string }
+) => {
+  return buildDailySaleRows(farmId, role, filters);
+};
+
+const getUsageStats = async (
+  farmId: string,
+  role?: string,
+  filters?: { from?: string; to?: string; productName?: string }
+) => {
+  return buildUsageStats(farmId, role, filters);
 };
 
 export default {
@@ -93,5 +111,6 @@ export default {
   updateTransactions,
   deleteTransactions,
   getDailySales,
+  getUsageStats,
   getDailyRemaining,
 };

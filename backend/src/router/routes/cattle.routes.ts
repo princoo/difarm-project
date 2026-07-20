@@ -4,6 +4,7 @@ import {
     getCattles,
     getCattleById,
     getCattleReport,
+    updateMilkingStatus,
     updateCattle,
     deleteCattle,
 } from '../../controller/cattle.controller';
@@ -63,9 +64,15 @@ router.get(
   asyncWrapper(cattleMiddleware.checkUserCattleExists),
   getCattleById
 );
+router.patch(
+  "/:cattleId/milking-status",
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  asyncWrapper(cattleMiddleware.checkUserCattleExists),
+  updateMilkingStatus
+);
 router.put(
   "/:cattleId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(cattleMiddleware.checkUserCattleExists),
   updateCattle
 );

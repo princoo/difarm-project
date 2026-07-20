@@ -1,8 +1,8 @@
 import { Link, useLocation } from '@/lib/router-compat';
 
 const TABS = [
-  { label: 'Overview', to: '/account/production' },
-  { label: 'Sales', to: '/account/production_transactions' },
+  { label: 'Production records', to: '/account/production' },
+  { label: 'Production usage', to: '/account/production_transactions' },
 ] as const;
 
 function isActive(pathname: string, to: string) {
@@ -17,7 +17,7 @@ export default function ProductionTabs() {
   const location = useLocation();
 
   return (
-    <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+    <div className="mb-3 -mt-1 border-b border-gray-200 dark:border-gray-700">
       <nav className="flex flex-wrap gap-1 -mb-px" aria-label="Production sections">
         {TABS.map((tab) => {
           const active = isActive(location.pathname, tab.to);
@@ -25,7 +25,7 @@ export default function ProductionTabs() {
             <Link
               key={tab.to}
               to={tab.to}
-              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              className={`px-3 py-1.5 text-sm font-semibold border-b-2 transition-colors ${
                 active
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300 dark:text-gray-400 dark:hover:text-white dark:hover:border-gray-600'

@@ -5,6 +5,7 @@ import {
   deleteProduction,
   getAllProductions,
   getProductionById,
+  getProductionStats,
   updateProduction,
 } from "../../controller/production.controller";
 import checkRole from "../../middleware/checkRole.middleware";
@@ -21,6 +22,12 @@ router.post(
   asyncWrapper(farmMiddleware.checkUserFarmExists),
   productValidation,
   asyncWrapper(createProduction)
+);
+router.get(
+  "/stats/:farmId",
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
+  asyncWrapper(farmMiddleware.checkUserFarmExists),
+  getProductionStats
 );
 router.get(
   "/:farmId",

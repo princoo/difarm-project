@@ -117,7 +117,7 @@ export default function AdminLayout({ children }: { children?: ReactNode }) {
                     
                     {/* BEGIN CONTENT AREA */}
                     <Suspense>
-                        <div className={`${themeConfig.animation} p-6 animate__animated`}>
+                        <div className={`${themeConfig.animation} px-6 pt-3 pb-6 animate__animated`}>
                             {children}
                         </div>
                     </Suspense>

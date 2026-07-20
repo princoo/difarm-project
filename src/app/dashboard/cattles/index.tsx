@@ -25,6 +25,10 @@ import {
   BuildingOffice2Icon,
 } from "@heroicons/react/24/outline";
 import { cattlePlaceInfo } from "./cattlePlace";
+import {
+  deriveLactationCycle,
+  lactationStageColor,
+} from "./lactationCycleLogic";
 
 type ViewMode = "card" | "table";
 
@@ -163,6 +167,29 @@ const CattleList = () => {
           {statusLabel(row?.status)}
         </span>
       ),
+    },
+    {
+      title: "Milk production",
+      accessor: "milkingStatus",
+      render: (row) => {
+        const active = row?.milkingStatus === "ACTIVE";
+        return (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+              active
+                ? "bg-success-light text-success dark:bg-success-dark-light"
+                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                active ? "bg-success" : "bg-gray-400"
+              }`}
+            />
+            {active ? "Active" : "Inactive"}
+          </span>
+        );
+      },
     },
     {
       title: "Farm",
@@ -353,6 +380,44 @@ const CattleList = () => {
                       <span className={`mt-2 px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(c.status)}`}>
                         {statusLabel(c.status)}
                       </span>
+                      {["FEMALE", "COW"].includes(String(c.gender || "").toUpperCase()) && (() => {
+                        const cycle = deriveLactationCycle({
+                          ...c,
+                          milkingStartedAt: c.milkingPeriods?.[0]?.startedAt,
+                          milkingEndedAt: c.milkingPeriods?.[0]?.endedAt,
+                        });
+                        if (!cycle.configured) return null;
+                        return (
+                          <span
+                            className={`mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${lactationStageColor(
+                              cycle.currentStage
+                            )}`}
+                            title="Current lactation stage"
+                          >
+                            {cycle.currentStage}
+                          </span>
+                        );
+                      })()}
+                      {["FEMALE", "COW"].includes(String(c.gender || "").toUpperCase()) && (
+                        <span
+                          className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            c.milkingStatus === "ACTIVE"
+                              ? "bg-success-light text-success dark:bg-success-dark-light"
+                              : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              c.milkingStatus === "ACTIVE"
+                                ? "bg-success"
+                                : "bg-gray-400"
+                            }`}
+                          />
+                          {c.milkingStatus === "ACTIVE"
+                            ? "Milking active"
+                            : "Milking inactive"}
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-3 space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
