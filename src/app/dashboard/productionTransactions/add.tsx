@@ -238,6 +238,7 @@ const AddProductionTransactionModal: React.FC<
                         label="Quantity sold"
                         name="dairyQuantity"
                         type="number"
+                        step="any"
                         className="!my-0"
                         error={errors.dairyQuantity?.message}
                         registration={register('dairyQuantity', {
@@ -248,6 +249,7 @@ const AddProductionTransactionModal: React.FC<
                         label="Unit price"
                         name="unitPrice"
                         type="number"
+                        step="any"
                         className="!my-0"
                         error={errors.unitPrice?.message}
                         registration={register('unitPrice', {
@@ -274,6 +276,7 @@ const AddProductionTransactionModal: React.FC<
                       label="Quantity used"
                       name="farmQuantity"
                       type="number"
+                      step="any"
                       error={errors.farmQuantity?.message}
                       registration={register('farmQuantity', {
                         valueAsNumber: true,
@@ -290,6 +293,7 @@ const AddProductionTransactionModal: React.FC<
                       label="Quantity consumed"
                       name="umucundaQuantity"
                       type="number"
+                      step="any"
                       error={errors.umucundaQuantity?.message}
                       registration={register('umucundaQuantity', {
                         valueAsNumber: true,

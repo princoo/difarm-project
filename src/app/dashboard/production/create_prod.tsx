@@ -239,6 +239,7 @@ const AddProductionModal: React.FC<AddProductionModalProps> = ({
                       <div className="mb-4">
                         <InputField
                           type="number"
+                          step="any"
                           label={`Quantity (${quantityUnit})`}
                           placeholder={`Enter quantity in ${quantityUnit}`}
                           registration={register('quantity')}

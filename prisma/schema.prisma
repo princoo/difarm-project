@@ -198,7 +198,7 @@ model Production {
   farmId          String
   cattleId        String
   productName     String
-  quantity        Int
+  quantity        Float
   /// Morning or evening milking; null for non-milk products
   milkingSession  MilkingSession?
   productionDate  DateTime

@@ -556,7 +556,10 @@ const Production = () => {
       accessor: 'quantity',
       render: (row) => (
         <p>
-          {row.quantity} {row.productName === 'MILK' ? 'L' : 'kg'}
+          {Number(row.quantity).toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          })}{' '}
+          {row.productName === 'MILK' ? 'L' : 'kg'}
         </p>
       ),
     },

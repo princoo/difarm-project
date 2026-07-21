@@ -3,6 +3,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 interface InputFieldProps {
     type?: string;
+    step?: string | number;
     name: string;
     label: string;
     placeholder?: string;
@@ -19,6 +20,7 @@ interface InputFieldProps {
 
 export const InputField: React.FC<InputFieldProps> = ({
     type = 'text',
+    step,
     name,
     label,
     placeholder,
@@ -47,6 +49,7 @@ export const InputField: React.FC<InputFieldProps> = ({
               required,
               autoComplete,
               autoFocus: focus,
+              step,
           }
         : {
               name,
@@ -57,6 +60,7 @@ export const InputField: React.FC<InputFieldProps> = ({
               required,
               autoComplete,
               autoFocus: focus,
+              step,
           };
 
     return (

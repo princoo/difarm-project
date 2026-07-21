@@ -456,17 +456,35 @@ const ProductionTransactions = () => {
     {
       title: 'Available',
       accessor: 'produced',
-      render: (row) => <p>{row.produced}</p>,
+      render: (row) => (
+        <p>
+          {Number(row.produced).toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          })}
+        </p>
+      ),
     },
     {
       title: 'Used',
       accessor: 'sold',
-      render: (row) => <p>{row.sold}</p>,
+      render: (row) => (
+        <p>
+          {Number(row.sold).toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          })}
+        </p>
+      ),
     },
     {
       title: 'Remaining',
       accessor: 'remaining',
-      render: (row) => <p>{row.remaining}</p>,
+      render: (row) => (
+        <p>
+          {Number(row.remaining).toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          })}
+        </p>
+      ),
     },
     {
       title: 'Dairy revenue',
