@@ -43,7 +43,7 @@ router.get(
 );
 router.put(
   "/:id",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   asyncWrapper(productionMiddleware.checkUserproductionExists),
   updateProduction
 );

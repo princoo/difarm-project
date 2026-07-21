@@ -67,14 +67,14 @@ const canCreate: Partial<Record<Entity, Role[]>> = {
   activityLogs: [],
 };
 
-/** Edit: farm admin or above, except cattle (managers may edit cattle profiles). */
+/** Edit: farm admin or above, with operational corrections available to managers. */
 const canUpdate: Partial<Record<Entity, Role[]>> = {
   users: ['SUPERADMIN', 'ADMIN'],
   farms: ['SUPERADMIN', 'ADMIN'],
   cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
-  production: ['SUPERADMIN', 'ADMIN'],
+  production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN'],
-  productionTransactions: ['SUPERADMIN', 'ADMIN'],
+  productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   wasteLogs: ['SUPERADMIN', 'ADMIN'],
   stock: ['SUPERADMIN', 'ADMIN'],
   stockTransactions: ['SUPERADMIN', 'ADMIN'],

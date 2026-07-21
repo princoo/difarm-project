@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DataTableV2, { TableColumnV2 } from '@/components/datatable';
 import IconPlus from '@/components/Icon/IconPlus';
+import IconEdit from '@/components/Icon/IconEdit';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 import formatDateToLongForm from '@/utils/DateFormattter';
 import AddProductionTransactionModal, {
   SaleDraft,
 } from './add';
+import UpdateProductionTransactionModal from './update';
 import {
   DailySaleRow,
   useProductionTransaction,
 } from '@/hooks/api/production_transaction';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { getFarmId } from '@/utils/farmId';
-import { canCreateEntity } from '@/utils/permissions';
+import { canCreateEntity, canUpdateEntity } from '@/utils/permissions';
 import ProductionTabs from '../production/ProductionTabs';
 import { toast } from 'react-hot-toast';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
@@ -85,13 +87,22 @@ function getPeriodRange(period: PeriodKey): { from?: string; to?: string } {
 }
 
 const ProductionTransactions = () => {
-  const { dailySales, getDailySales, getUsageStats, loading }: any =
-    useProductionTransaction();
+  const {
+    dailySales,
+    production_transactions,
+    getDailySales,
+    getProductionTransactions,
+    getUsageStats,
+    loading,
+  }: any = useProductionTransaction();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [saleDraft, setSaleDraft] = useState<SaleDraft | null>(null);
   const role = isLoggedIn()?.role ?? '';
   const [farmId, setFarmIdState] = useState<string | null>(() => getFarmId());
   const canCreateRole = canCreateEntity('productionTransactions', role);
+  const canUpdate = canUpdateEntity('productionTransactions', role);
   const canCreate = canCreateRole && !!farmId;
 
   const [period, setPeriod] = useState<PeriodKey>('day');
@@ -153,6 +164,12 @@ const ProductionTransactions = () => {
       to: dateRange.to,
       productType: productName,
     });
+    getProductionTransactions({
+      pageSize: 100,
+      from: dateRange.from,
+      to: dateRange.to,
+      productType: productName,
+    });
   }, [farmId, dateRange.from, dateRange.to, productName]);
 
   useEffect(() => {
@@ -161,6 +178,12 @@ const ProductionTransactions = () => {
 
   const handleRefetch = () => {
     getDailySales({
+      from: dateRange.from,
+      to: dateRange.to,
+      productType: productName,
+    });
+    getProductionTransactions({
+      pageSize: 100,
       from: dateRange.from,
       to: dateRange.to,
       productType: productName,
@@ -525,6 +548,72 @@ const ProductionTransactions = () => {
       : []),
   ];
 
+  const usageRecords = (production_transactions?.data?.data ?? []).filter(
+    (row: any) => Number(row.quantity) > 0
+  );
+  const usageColumns: TableColumnV2<any>[] = [
+    {
+      title: 'Date',
+      accessor: 'date',
+      render: (row) => <p>{formatDateToLongForm(row.date)}</p>,
+    },
+    {
+      title: 'Product',
+      accessor: 'productType',
+      render: (row) => <p>{row.productType}</p>,
+    },
+    {
+      title: 'Usage',
+      accessor: 'usageCategory',
+      render: (row) => (
+        <p>
+          {row.usageCategory === 'USED_ON_FARM'
+            ? 'Used on farm'
+            : row.usageCategory === 'CONSUMED_BY_UMUCUNDA'
+              ? 'Consumed by Umucunda'
+              : 'Sold to dairy'}
+        </p>
+      ),
+    },
+    {
+      title: 'Quantity',
+      accessor: 'quantity',
+      render: (row) => (
+        <p>
+          {Number(row.quantity).toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          })}
+        </p>
+      ),
+    },
+    {
+      title: 'Dairy / destination',
+      accessor: 'consumer',
+      render: (row) => <p>{row.consumer || '—'}</p>,
+    },
+    ...(canUpdate
+      ? [
+          {
+            title: 'Actions',
+            accessor: 'actions',
+            render: (row: any) => (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+                onClick={() => {
+                  setSelectedTransaction(row);
+                  setIsUpdateModalOpen(true);
+                }}
+              >
+                <IconEdit className="w-4 h-4" />
+                Edit
+              </button>
+            ),
+          } as TableColumnV2<any>,
+        ]
+      : []),
+  ];
+
   return (
     <div className="">
       <ProductionTabs />
@@ -543,6 +632,15 @@ const ProductionTransactions = () => {
         }}
         handleRefetch={handleRefetch}
         draft={saleDraft}
+      />
+      <UpdateProductionTransactionModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => {
+          setIsUpdateModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        transaction={selectedTransaction}
+        handleRefetch={handleRefetch}
       />
 
       <div className="w-full">
@@ -576,6 +674,20 @@ const ProductionTransactions = () => {
               </button>
             ) : undefined
           }
+        />
+      </div>
+
+      <div className="w-full mt-5">
+        <DataTableV2
+          columns={usageColumns}
+          data={usageRecords}
+          isLoading={loading}
+          currentPage={production_transactions?.data?.currentPage ?? 1}
+          total={usageRecords.length}
+          lastPage={1}
+          previousPage={production_transactions?.data?.previousPage ?? 0}
+          nextPage={production_transactions?.data?.nextPage ?? 0}
+          tableName="Usage records"
         />
       </div>
     </div>

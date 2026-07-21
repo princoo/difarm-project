@@ -25,10 +25,7 @@ const newTransactionSchame = Joi.object({
 });
 
 const updateTransactionSchame = Joi.object({
-  productType: Joi.string().valid("MILK", "MEAT", "DUNG", "LIQUIDMANURE"),
-  usageCategory: Joi.string().valid(...usageCategories),
-  quantity: Joi.number().greater(0),
-  date: Joi.date().iso(),
+  quantity: Joi.number().min(0),
   consumer: Joi.string().allow(""),
   unitPrice: Joi.number().min(0),
   amountPaid: Joi.number().min(0),

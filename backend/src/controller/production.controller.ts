@@ -391,6 +391,10 @@ export const updateProduction = async (req: Request, res: Response) => {
 
     try {
         const resultingProductName = productName || prodType;
+        const resultingQuantity =
+            quantity === undefined || quantity === null
+                ? Number(previousQuantity)
+                : Number(quantity);
         const resultingDate = productionDate
             ? new Date(productionDate)
             : new Date(previousProductionDate);
@@ -419,23 +423,34 @@ export const updateProduction = async (req: Request, res: Response) => {
             where: { id },
             data: {
                 productName,
-                quantity,
+                quantity: resultingQuantity,
                 milkingSession: session,
                 productionDate: productionDate ? new Date(productionDate) : undefined,
                 expirationDate: resolvedExpiration,
             },
             include: { cattle: true },
         });
-        if (quantity) {
-            if (previousQuantity > quantity) {
-                const updatedQuantity = previousQuantity - quantity
-                await productionTotalsService.recordAmount(farmId,prodType as ProductType ,-updatedQuantity)
+        if (resultingProductName !== prodType) {
+            await productionTotalsService.recordAmount(
+                farmId,
+                prodType as ProductType,
+                -Number(previousQuantity)
+            );
+            await productionTotalsService.recordAmount(
+                farmId,
+                resultingProductName as ProductType,
+                resultingQuantity
+            );
+        } else {
+            const quantityDelta = resultingQuantity - Number(previousQuantity);
+            if (quantityDelta !== 0) {
+                await productionTotalsService.recordAmount(
+                    farmId,
+                    prodType as ProductType,
+                    quantityDelta
+                );
             }
-            else{
-                const updatedQuantity = quantity - previousQuantity
-                await productionTotalsService.recordAmount(farmId,prodType as ProductType ,updatedQuantity)
-            }
-          }
+        }
 
         responseHandler.setSuccess(StatusCodes.OK, 'Production record updated successfully.', updatedProduction);
     } catch (error) {

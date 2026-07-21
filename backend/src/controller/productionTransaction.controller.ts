@@ -261,16 +261,33 @@ const allTransactions = async (
   const user = (req as any).user.data;
   const currentPage = Math.max(1, page || 1);
   const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
+  const from = req.query.from ? new Date(String(req.query.from)) : undefined;
+  const to = req.query.to ? new Date(String(req.query.to)) : undefined;
+  if (from) from.setHours(0, 0, 0, 0);
+  if (to) to.setHours(23, 59, 59, 999);
+  const productType = req.query.productType
+    ? String(req.query.productType).toUpperCase()
+    : undefined;
 
   const skip = (currentPage - 1) * currentPageSize;
   const take = currentPageSize;
 
   try {
     let transactions: any;
+    const where: any = {
+      ...(farmId && farmId !== ALL_FARMS_SCOPE ? { farmId } : {}),
+      ...(productType ? { productType } : {}),
+      ...(from || to
+        ? {
+            date: {
+              ...(from ? { gte: from } : {}),
+              ...(to ? { lte: to } : {}),
+            },
+          }
+        : {}),
+    };
 
     if (user.role === Roles.SUPERADMIN) {
-      const where =
-        farmId && farmId !== ALL_FARMS_SCOPE ? { farmId } : {};
       transactions = await prisma.productionTransaction.findMany({
         where,
         include: { farm: true },
@@ -280,7 +297,7 @@ const allTransactions = async (
       });
     } else if (user.role === Roles.ADMIN || user.role === Roles.MANAGER) {
       transactions = await prisma.productionTransaction.findMany({
-        where: { farmId },
+        where: { ...where, farmId },
         include: { farm: true },
         skip,
         take,
@@ -296,10 +313,8 @@ const allTransactions = async (
     const totalCount = await prisma.productionTransaction.count({
       where:
         user.role === Roles.ADMIN || user.role === Roles.MANAGER
-          ? { farmId }
-          : farmId && farmId !== ALL_FARMS_SCOPE
-            ? { farmId }
-            : {},
+          ? { ...where, farmId }
+          : where,
     });
 
     const paginationResult = paginate(
@@ -344,34 +359,96 @@ const updateTransactions = async (
   _next: NextFunction
 ) => {
   const transactionId = asString(req.params.transactionId);
-  const { farmId, productType } = req.transaction;
-  const { quantity } = req.body;
+  const transaction = req.transaction;
+  const quantity =
+    req.body.quantity === undefined
+      ? Number(transaction.quantity)
+      : Number(req.body.quantity);
+  const isDairy =
+    !transaction.usageCategory ||
+    transaction.usageCategory === "SOLD_TO_DAIRY";
+  const unitPrice = isDairy
+    ? req.body.unitPrice === undefined
+      ? Number(transaction.unitPrice || 0)
+      : Number(req.body.unitPrice)
+    : 0;
+  const consumer = isDairy
+    ? String(req.body.consumer ?? transaction.consumer ?? "").trim()
+    : transaction.usageCategory === "USED_ON_FARM"
+      ? "On farm"
+      : "Umucunda";
 
-  if (quantity) {
-    const updatedQuantity = req.transaction.quantity - quantity;
-    const productInfo = await productionTotalsService.prodInfo(
-      farmId,
-      productType
+  if (quantity > 0 && isDairy && !consumer) {
+    responseHandler.setError(
+      StatusCodes.BAD_REQUEST,
+      "Dairy name is required when the dairy quantity is greater than zero"
     );
-    if (productInfo) {
-      if (updatedQuantity + productInfo.totalQuantity < 0) {
-        responseHandler.setError(
-          StatusCodes.NOT_ACCEPTABLE,
-          "You have less items left for this product"
-        );
-        return responseHandler.send(res);
-      }
-      await productionTotalsService.recordAmount(
-        farmId,
-        productType,
-        updatedQuantity
-      );
-    }
+    return responseHandler.send(res);
+  }
+  if (quantity > 0 && isDairy && unitPrice <= 0) {
+    responseHandler.setError(
+      StatusCodes.BAD_REQUEST,
+      "Unit price must be greater than zero for dairy usage"
+    );
+    return responseHandler.send(res);
+  }
+
+  const daily = await productionTransactionService.getDailyRemaining(
+    transaction.farmId,
+    transaction.productType,
+    transaction.date
+  );
+  const availableForCorrection =
+    daily.remaining + Number(transaction.quantity);
+  if (quantity > availableForCorrection) {
+    responseHandler.setError(
+      StatusCodes.NOT_ACCEPTABLE,
+      `Only ${availableForCorrection} is available for this production day`
+    );
+    return responseHandler.send(res);
+  }
+
+  const stockDelta = Number(transaction.quantity) - quantity;
+  const productInfo = await productionTotalsService.prodInfo(
+    transaction.farmId,
+    transaction.productType
+  );
+  if (productInfo && productInfo.totalQuantity + stockDelta < 0) {
+    responseHandler.setError(
+      StatusCodes.NOT_ACCEPTABLE,
+      "You have less production available for this correction"
+    );
+    return responseHandler.send(res);
+  }
+
+  const value = isDairy ? quantity * unitPrice : 0;
+  const requestedPaid =
+    req.body.amountPaid === undefined
+      ? transaction.amountPaid == null
+        ? value
+        : Number(transaction.amountPaid)
+      : Number(req.body.amountPaid);
+  const amountPaid = isDairy
+    ? Math.max(0, Math.min(requestedPaid, value))
+    : 0;
+
+  if (stockDelta !== 0) {
+    await productionTotalsService.recordAmount(
+      transaction.farmId,
+      transaction.productType,
+      stockDelta
+    );
   }
 
   const data = await productionTransactionService.updateTransactions(
     transactionId,
-    req.body
+    {
+      quantity,
+      consumer,
+      unitPrice: isDairy ? unitPrice : null,
+      value,
+      amountPaid,
+    }
   );
   responseHandler.setSuccess(
     StatusCodes.OK,

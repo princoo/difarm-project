@@ -4,14 +4,13 @@ import { Fragment, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { InputField } from '@/components/input';
-import AppSelect from '@/components/select/SelectField';
 import { useProductionTransaction } from '@/hooks/api/production_transaction';
-import { transitions } from '@mantine/core/lib/Transition/transitions';
 
 const productionTransactionSchema = z.object({
-    quantity: z.number().min(1, 'Quantity must be at least 1'),
-    productType: z.string().nonempty('Product is required'),
-    consumer: z.string().nonempty('Consumer is required'),
+    quantity: z.number().min(0, 'Quantity cannot be negative'),
+    consumer: z.string().optional(),
+    unitPrice: z.number().min(0, 'Unit price cannot be negative').optional(),
+    amountPaid: z.number().min(0, 'Amount paid cannot be negative').optional(),
 });
 
 interface UpdateProductionTransactionModalProps {
@@ -31,15 +30,21 @@ const UpdateProductionTransactionModal: React.FC<
         handleSubmit,
         formState: { errors },
         reset,
-        setValue,
     } = useForm({
         resolver: zodResolver(productionTransactionSchema),
-        defaultValues: transaction,
     });
 
     useEffect(() => {
-        if (!isOpen) {
-            reset(transaction);
+        if (isOpen && transaction) {
+            reset({
+                quantity: Number(transaction.quantity) || 0,
+                consumer: transaction.consumer || '',
+                unitPrice: Number(transaction.unitPrice) || 0,
+                amountPaid:
+                    transaction.amountPaid == null
+                        ? Number(transaction.value) || 0
+                        : Number(transaction.amountPaid) || 0,
+            });
         }
     }, [isOpen, reset, transaction]);
 
@@ -48,10 +53,14 @@ const UpdateProductionTransactionModal: React.FC<
             await updateProductionTransaction(transaction.id, data);
             onClose();
             handleRefetch();
-        } catch (err) {}
+        } catch (err) {
+            // The API hook displays the error message.
+        }
     };
 
-   
+    const isDairy =
+        !transaction?.usageCategory ||
+        transaction?.usageCategory === 'SOLD_TO_DAIRY';
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -83,8 +92,17 @@ const UpdateProductionTransactionModal: React.FC<
                                     as="h3"
                                     className="text-lg font-medium leading-6 text-gray-900"
                                 >
-                                    Update Sale
+                                    Edit production usage
                                 </Dialog.Title>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    {transaction?.productType} ·{' '}
+                                    {transaction?.usageCategory === 'USED_ON_FARM'
+                                        ? 'Used on farm'
+                                        : transaction?.usageCategory ===
+                                            'CONSUMED_BY_UMUCUNDA'
+                                          ? 'Consumed by Umucunda'
+                                          : 'Sold to dairy'}
+                                </p>
                                 <form
                                     onSubmit={handleSubmit(onSubmit)}
                                     className="mt-4"
@@ -93,42 +111,47 @@ const UpdateProductionTransactionModal: React.FC<
                                         label="Quantity"
                                         placeholder="Enter quantity"
                                         type="number"
-                                        defaultValue={transaction?.quantity}
+                                        step="any"
                                         error={errors.quantity?.message}
                                         registration={register('quantity', {
                                             valueAsNumber: true,
                                         })}
                                         name={'quantity'}
                                     />
-                                    <AppSelect
-                                        label="Type"
-                                        name="productType"
-                                        placeholder="Product Type"
-                                        options={[
-                                            { value: 'MILK', label: 'Milk' },
-                                            { value: 'MEAT', label: 'Meat' },
-                                        ]}
-                                        defaultValue={{
-                                            label: transaction?.productType,
-                                            value: transaction?.productType,
-                                        }}
-                                        error={errors.productType?.message}
-                                        register={register}
-                                        
-                                        setValue={setValue}
-                                        validation={{
-                                            required: 'Type is required',
-                                        }}
-                                    />
-                                      <InputField
-                                        label="Consumer"
-                                        placeholder="Enter consumer name"
-                                        type="text"
-                                        defaultValue={transaction?.consumer}
-                                        error={errors.consumer?.message}
-                                        registration={register('consumer')}
-                                        name={'consumer'}
-                                    />
+                                    {isDairy && (
+                                        <>
+                                            <InputField
+                                                label="Dairy name"
+                                                placeholder="Enter dairy name"
+                                                type="text"
+                                                error={errors.consumer?.message}
+                                                registration={register('consumer')}
+                                                name="consumer"
+                                            />
+                                            <InputField
+                                                label="Unit price"
+                                                placeholder="Enter unit price"
+                                                type="number"
+                                                step="any"
+                                                error={errors.unitPrice?.message}
+                                                registration={register('unitPrice', {
+                                                    valueAsNumber: true,
+                                                })}
+                                                name="unitPrice"
+                                            />
+                                            <InputField
+                                                label="Amount paid"
+                                                placeholder="Enter amount paid"
+                                                type="number"
+                                                step="any"
+                                                error={errors.amountPaid?.message}
+                                                registration={register('amountPaid', {
+                                                    valueAsNumber: true,
+                                                })}
+                                                name="amountPaid"
+                                            />
+                                        </>
+                                    )}
                                     <div className="mt-4 flex justify-end space-x-2">
                                         <button
                                             type="button"

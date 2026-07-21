@@ -59,7 +59,7 @@ router.get(
 
 router.patch(
   "/:transactionId",
-  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN, Roles.MANAGER]),
   validate(prodTransactionSchema.updateTransactionSchame),
   asyncWrapper(productionTransactionMiddleware.checkUserTansactionExists),
   asyncWrapper(productionTransactionController.updateTransactions)

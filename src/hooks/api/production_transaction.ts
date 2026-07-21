@@ -27,7 +27,9 @@ export const useProductionTransaction = () => {
   );
   const [dailySales, setDailySales] = useState<DailySaleRow[]>([]);
 
-  const getProductionTransactions = async (query?: string) => {
+  const getProductionTransactions = async (
+    query?: string | URLSearchParams | Record<string, unknown>
+  ) => {
     const farmId = getReadFarmScope(isLoggedIn()?.role);
     if (!farmId) {
       setProductionTransactions([] as any);
@@ -172,14 +174,15 @@ export const useProductionTransaction = () => {
     setError(null);
     try {
       const response = await api.patch(`/production-transaction/${id}`, data);
-      toast.success('Sale updated successfully');
+      toast.success('Production usage updated successfully');
       return response.data;
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
-        'An error occurred while updating the sale.';
+        'An error occurred while updating production usage.';
       toast.error(errorMessage);
       setError(errorMessage);
+      throw error;
     } finally {
       setLoading(false);
     }
