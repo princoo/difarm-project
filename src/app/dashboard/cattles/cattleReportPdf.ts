@@ -308,10 +308,11 @@ export async function generateCattleReportPdf(report: CattleReport) {
     y = dataTable(
       doc,
       y,
-      [['Date', 'Treatment / vaccine', 'Veterinarian', 'Contact']],
+      [['Date', 'Vaccine name', 'Disease', 'Veterinarian', 'Contact']],
       report.healthRecords.map((r) => [
         fmtDate(r.date),
         r.vaccineType,
+        r.diseaseName || '—',
         r.veterinarian?.name || '—',
         r.veterinarian?.phone || r.veterinarian?.email || '—',
       ])

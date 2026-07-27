@@ -57,9 +57,14 @@ const VaccineRecords = () => {
             render: row => <p>{formatDateToLongForm(row?.date)}</p>,
         },
         {
-            title: 'Vaccine Type',
+            title: 'Vaccine Name',
             accessor: 'vaccineType',
             render: row => <p>{row?.vaccineType}</p>,
+        },
+        {
+            title: 'Disease',
+            accessor: 'diseaseName',
+            render: row => <p>{row?.diseaseName || '—'}</p>,
         },
         {
             title: 'Vaccine price',

@@ -10,6 +10,7 @@ export interface CattleReport {
     id: string;
     date: string;
     vaccineType: string;
+    diseaseName?: string | null;
     veterinarian?: { name: string; phone: string; email: string } | null;
   }>;
   breedingRecords: Array<{

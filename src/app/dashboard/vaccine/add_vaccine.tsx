@@ -13,7 +13,8 @@ import { DocumentArrowUpIcon } from '@heroicons/react/24/outline';
 const vaccineRecordSchema = z.object({
     cattleId: z.string().nonempty('Cattle ID is required'),
     date: z.string().nonempty('Date is required'),
-    vaccineType: z.string().nonempty('Vaccine type is required'),
+    vaccineType: z.string().nonempty('Vaccine name is required'),
+    diseaseName: z.string().nonempty('Disease name is required'),
     price: z.number().min(0.01, 'Price must be at least 0.01'),
     vetId: z.string().nonempty('Veterinarian ID is required'),
 });
@@ -74,6 +75,7 @@ const AddVaccineRecordModal: React.FC<AddVaccineRecordModalProps> = ({
             formData.append('cattleId', data.cattleId);
             formData.append('date', data.date);
             formData.append('vaccineType', data.vaccineType);
+            formData.append('diseaseName', data.diseaseName);
             formData.append('price', String(data.price));
             formData.append('vetId', data.vetId);
             formData.append('farmId', farmId ?? '');
@@ -147,12 +149,20 @@ const AddVaccineRecordModal: React.FC<AddVaccineRecordModalProps> = ({
                                         registration={register('date')}
                                     />
                                     <InputField
-                                        label="Vaccine Type"
+                                        label="Vaccine Name"
                                         name="vaccineType"
-                                        placeholder="Enter Vaccine Type"
+                                        placeholder="Enter vaccine name"
                                         type="text"
                                         error={errors.vaccineType?.message}
                                         registration={register('vaccineType')}
+                                    />
+                                    <InputField
+                                        label="Disease vaccinated for"
+                                        name="diseaseName"
+                                        placeholder="Enter disease name"
+                                        type="text"
+                                        error={errors.diseaseName?.message}
+                                        registration={register('diseaseName')}
                                     />
                                     <InputField
                                         label="Vaccine price"

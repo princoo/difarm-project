@@ -403,6 +403,7 @@ const getCattleReport = async (cattleId: string) => {
       id: v.id,
       date: v.date,
       vaccineType: v.vaccineType,
+      diseaseName: v.diseaseName,
       veterinarian: v.veterinarian
         ? {
             name: v.veterinarian.name,

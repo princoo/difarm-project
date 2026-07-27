@@ -11,7 +11,7 @@ const responseHandler = new ResponseHandler();
 
 export const recordVaccination = async (req: Request, res: Response) => {
 
-    const { cattleId, date, vaccineType, vetId, farmId, price } = req.body;
+    const { cattleId, date, vaccineType, diseaseName, vetId, farmId, price } = req.body;
     const uploaded = (req as any).file as Express.Multer.File | undefined;
 
     try {
@@ -20,6 +20,7 @@ export const recordVaccination = async (req: Request, res: Response) => {
             cattleId,
             date: new Date(date),
             vaccineType,
+            diseaseName: diseaseName ? String(diseaseName).trim() : null,
             vetId,
             farmId,
             price: price !== undefined && price !== '' ? Number(price) : null,
@@ -106,13 +107,14 @@ export const getAllVaccinations = async (req: Request, res: Response) => {
   
   export const updateVaccination = async (req: Request, res: Response) => {
     const vaccineId = asString(req.params.vaccineId);
-    const { cattleId, date, vaccineType, vetId, price } = req.body;
+    const { cattleId, date, vaccineType, diseaseName, vetId, price } = req.body;
     const uploaded = (req as any).file as Express.Multer.File | undefined;
     try {
       const data: Record<string, unknown> = {
         cattleId,
         date: new Date(date),
         vaccineType,
+        diseaseName: diseaseName ? String(diseaseName).trim() : null,
         vetId,
       };
       if (price !== undefined && price !== '') {

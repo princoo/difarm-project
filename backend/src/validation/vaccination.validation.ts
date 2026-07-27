@@ -4,6 +4,7 @@ const vaccinationSchema = Joi.object({
     cattleId: Joi.string().required(),
     date: Joi.date().required(),
     vaccineType: Joi.string().required(),
+    diseaseName: Joi.string().trim().required(),
     vetId: Joi.string().required(),
     farmId: Joi.string().required(),
     price: Joi.number().min(0).optional().allow(null, ''),

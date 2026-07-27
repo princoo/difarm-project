@@ -112,7 +112,8 @@ export default function FarmDetail() {
   const vaccinationColumns: TableColumnV2<any>[] = [
     { title: "Cattle", accessor: "cattle.tagNumber", render: (row) => <p>{row?.cattle?.tagNumber ?? "—"}</p> },
     { title: "Date", accessor: "date", render: (row) => <p>{row?.date ? formatDateToLongForm(row.date) : "—"}</p> },
-    { title: "Vaccine Type", accessor: "vaccineType", render: (row) => <p>{row?.vaccineType}</p> },
+    { title: "Vaccine Name", accessor: "vaccineType", render: (row) => <p>{row?.vaccineType}</p> },
+    { title: "Disease", accessor: "diseaseName", render: (row) => <p>{row?.diseaseName || "—"}</p> },
     { title: "Veterinarian", accessor: "veterinarian.name", render: (row) => <p>{row?.veterinarian?.name ?? "—"}</p> },
     {
       title: "Document",

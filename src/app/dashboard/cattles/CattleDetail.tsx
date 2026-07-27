@@ -432,7 +432,7 @@ export default function CattleDetail() {
                   <RecordRow
                     key={r.id}
                     title={r.vaccineType}
-                    subtitle={formatDateToLongForm(r.date)}
+                    subtitle={`${formatDateToLongForm(r.date)}${r.diseaseName ? ` · ${r.diseaseName}` : ''}`}
                     badge={r.veterinarian?.name?.split(' ')[0]}
                   />
                 ))
@@ -807,7 +807,8 @@ export default function CattleDetail() {
                   <thead>
                     <tr className="text-left text-xs uppercase text-gray-500 border-b border-gray-200 dark:border-gray-700">
                       <th className="pb-3 pr-4 font-semibold">Date</th>
-                      <th className="pb-3 pr-4 font-semibold">Treatment / vaccine</th>
+                      <th className="pb-3 pr-4 font-semibold">Vaccine name</th>
+                      <th className="pb-3 pr-4 font-semibold">Disease</th>
                       <th className="pb-3 font-semibold">Veterinarian</th>
                     </tr>
                   </thead>
@@ -817,6 +818,7 @@ export default function CattleDetail() {
                         <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700/50">
                           <td className="py-3 pr-4">{formatDateToLongForm(r.date)}</td>
                           <td className="py-3 pr-4 font-medium text-gray-900 dark:text-white">{r.vaccineType}</td>
+                          <td className="py-3 pr-4 text-gray-700 dark:text-gray-300">{r.diseaseName || '—'}</td>
                           <td className="py-3 text-gray-600 dark:text-gray-400">
                             {r.veterinarian?.name || '—'}
                             {r.veterinarian?.phone && (
@@ -827,7 +829,7 @@ export default function CattleDetail() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={3} className="py-8 text-center text-gray-400 italic">
+                        <td colSpan={4} className="py-8 text-center text-gray-400 italic">
                           No health records yet
                         </td>
                       </tr>

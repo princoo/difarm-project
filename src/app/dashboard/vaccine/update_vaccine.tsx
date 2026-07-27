@@ -12,7 +12,8 @@ import { DocumentArrowUpIcon } from '@heroicons/react/24/outline';
 
 const vaccineSchema = z.object({
     cattleId: z.string().nonempty('Cattle ID is required'),
-    vaccineType: z.string().nonempty('Vaccine type is required'),
+    vaccineType: z.string().nonempty('Vaccine name is required'),
+    diseaseName: z.string().nonempty('Disease name is required'),
     price: z.number().min(0.01, 'Price must be at least 0.01').optional(),
     vetId: z.string().nonempty('Vet ID is required'),
     date: z.string().nonempty('Date is required'),
@@ -46,6 +47,7 @@ const UpdateVaccineModal = ({
         reset({
             cattleId: vaccine?.cattleId ?? vaccine?.cattle?.id,
             vaccineType: vaccine?.vaccineType,
+            diseaseName: vaccine?.diseaseName || '',
             price: vaccine?.price,
             vetId: vaccine?.vetId ?? vaccine?.veterinarian?.id,
             date: vaccine?.date ? String(vaccine.date).slice(0, 10) : '',
@@ -58,6 +60,7 @@ const UpdateVaccineModal = ({
             formData.append('cattleId', data.cattleId);
             formData.append('date', data.date);
             formData.append('vaccineType', data.vaccineType);
+            formData.append('diseaseName', data.diseaseName);
             formData.append('vetId', data.vetId);
             if (data.price !== undefined && data.price !== null && !Number.isNaN(data.price)) {
                 formData.append('price', String(data.price));
@@ -154,11 +157,11 @@ const UpdateVaccineModal = ({
                                             <div className="mb-4">
                                                 <InputField
                                                     type="text"
-                                                    label="Vaccine Type"
+                                                    label="Vaccine Name"
                                                     defaultValue={
                                                         vaccine?.vaccineType
                                                     }
-                                                    placeholder="Enter vaccine type"
+                                                    placeholder="Enter vaccine name"
                                                     registration={register(
                                                         'vaccineType'
                                                     )}
@@ -167,6 +170,24 @@ const UpdateVaccineModal = ({
                                                             ?.message
                                                     }
                                                     name="vaccineType"
+                                                />
+                                            </div>
+                                            <div className="mb-4">
+                                                <InputField
+                                                    type="text"
+                                                    label="Disease vaccinated for"
+                                                    defaultValue={
+                                                        vaccine?.diseaseName
+                                                    }
+                                                    placeholder="Enter disease name"
+                                                    registration={register(
+                                                        'diseaseName'
+                                                    )}
+                                                    error={
+                                                        errors.diseaseName
+                                                            ?.message
+                                                    }
+                                                    name="diseaseName"
                                                 />
                                             </div>
                                             <div>

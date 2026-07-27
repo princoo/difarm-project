@@ -377,7 +377,10 @@ model Vaccination {
   cattleId     String
   farmId       String?       @default(uuid())
   date         DateTime     @default(now())
+  /// Product / vaccine name administered
   vaccineType  String
+  /// Disease the cattle was vaccinated against
+  diseaseName  String?
   price        Float?
   documentUrl  String?
   documentName String?
