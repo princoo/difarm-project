@@ -33,7 +33,12 @@ const AddVeterinarianModal = ({ isOpen, onClose, handleRefetch }: any) => {
             handleRefetch();
             reset();
         } catch (e: any) {
-            toast.error(e.response?.data?.message || 'Failed to create veterinarian');
+            const data = e.response?.data;
+            const message =
+                data?.message ||
+                (Array.isArray(data?.error) ? data.error.join('. ') : null) ||
+                'Failed to create veterinarian';
+            toast.error(message);
         }
     };
 

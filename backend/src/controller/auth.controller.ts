@@ -291,6 +291,23 @@ export const registerVeterinarian = async (req: Request, res: Response) => {
         return responseHandler.send(res);
       }
 
+      if (requestUser.role === Roles.ADMIN) {
+        if (farm.ownerId !== requestUser.userId) {
+          responseHandler.setError(
+            StatusCodes.FORBIDDEN,
+            "You can only assign veterinarians to your own farms."
+          );
+          return responseHandler.send(res);
+        }
+        if (!farm.status) {
+          responseHandler.setError(
+            StatusCodes.BAD_REQUEST,
+            "Farm must be activated before assigning a veterinarian."
+          );
+          return responseHandler.send(res);
+        }
+      }
+
       const emailExist = await prisma.account.findUnique({ where: { email } });
       const accountExist = await prisma.account.findUnique({ where: { username } });
       if (emailExist || accountExist) {
@@ -298,11 +315,29 @@ export const registerVeterinarian = async (req: Request, res: Response) => {
         return responseHandler.send(res);
       }
 
+      const phoneValue = phone ? String(phone).trim() : null;
+      if (phoneValue) {
+        const phoneExist = await prisma.account.findUnique({ where: { phone: phoneValue } });
+        if (phoneExist) {
+          responseHandler.setError(StatusCodes.BAD_REQUEST, "An account with this phone already exists.");
+          return responseHandler.send(res);
+        }
+      }
+
+      const vetEmailExist = await prisma.veterinarian.findUnique({ where: { email } });
+      if (vetEmailExist) {
+        responseHandler.setError(
+          StatusCodes.BAD_REQUEST,
+          "A veterinarian with this email already exists."
+        );
+        return responseHandler.send(res);
+      }
+
       const userAccount = await prisma.account.create({
         data: {
           username,
           email,
-          phone,
+          phone: phoneValue,
           role: Roles.VETERINARIAN,
           password: await hashPassword(password),
           status: false,
@@ -321,7 +356,7 @@ export const registerVeterinarian = async (req: Request, res: Response) => {
         data: {
           name: fullname,
           email: email!,
-          phone: phone || "",
+          phone: phoneValue || "",
           farmId,
           accountId: userAccount.id,
         },

@@ -172,7 +172,7 @@ export const getAllProductions = async (req: Request, res: Response) => {
     const [productions, totalCount] = await Promise.all([
       prisma.production.findMany({
         where,
-        include: { cattle: true },
+        include: { cattle: true, farm: { select: { id: true, name: true } } },
         orderBy: { productionDate: "desc" },
         skip,
         take,

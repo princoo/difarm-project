@@ -4,6 +4,7 @@ import { toggleSidebar } from "@/store/themeConfigSlice";
 import {
   BuildingOffice2Icon,
   Cog6ToothIcon,
+  DocumentChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { FaSwatchbook } from "react-icons/fa";
 import { useDispatch } from "react-redux";
@@ -88,6 +89,13 @@ const Sidebar = () => {
       icon: IconBolt,
       current: location.pathname === "/account/health",
       roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"],
+    },
+    {
+      name: "Reports",
+      to: "/account/reports",
+      icon: DocumentChartBarIcon,
+      current: location.pathname.startsWith("/account/reports"),
+      roles: ["SUPERADMIN", "ADMIN", "MANAGER"],
     },
     {
       name: "Activity logs",

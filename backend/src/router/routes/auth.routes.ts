@@ -1,6 +1,7 @@
 import { Router } from '../../util/cjsDeps';
 import type { Request, Response } from 'express';
 import signupValidation from '../../middleware/signupValidation.middleware';
+import veterinarianSignupValidation from '../../middleware/veterinarianSignupValidation.middleware';
 import {
   forgotPassword,
   getAllUsers,
@@ -64,9 +65,9 @@ route.patch(
 route.post(
   '/register/veterinarian',
   isAuthorized,
-  checkRole([Roles.ADMIN]),
+  checkRole([Roles.SUPERADMIN, Roles.ADMIN]),
   asyncWrapper(authMiddleware.checkInitialBody),
-  signupValidation,
+  veterinarianSignupValidation,
   registerVeterinarian
 );
 route.get(

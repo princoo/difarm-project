@@ -132,6 +132,7 @@ const ROUTE_ROLES: { prefix: string; roles: Role[] }[] = [
   { prefix: '/account/production_totals', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/production_transactions', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/production', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/reports', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/waste-logs', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/stock', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/health', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
