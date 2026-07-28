@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "@/lib/router-compat";
 import VaccineRecords from "../vaccine";
 import InseminationRecords from "../insemination";
 import Veterinarians from "../veterians";
+import MedicineRecords from "../medicine";
 
 // Updated tabs array with components and route params
 const tabs = [
@@ -16,6 +17,11 @@ const tabs = [
     name: "Insemination", 
     component: <InseminationRecords />, 
     routeParam: "insemination" 
+  },
+  {
+    name: "Medicine",
+    component: <MedicineRecords />,
+    routeParam: "medicine",
   },
   { 
     name: "Veterinarian", 
@@ -59,13 +65,15 @@ export default function Health() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    searchParams.set('tab','vaccination');
-    searchParams.set('page','1');
-    searchParams.set('pageSize','10');
-    searchParams.set('search','');
-    navigate({
-      search: searchParams.toString()
-    });
+    if (!searchParams.get('tab')) {
+      searchParams.set('tab', 'vaccination');
+      searchParams.set('page', '1');
+      searchParams.set('pageSize', '10');
+      searchParams.set('search', '');
+      navigate({
+        search: searchParams.toString(),
+      });
+    }
     requestAnimationFrame(() => {
       const overviewElement = tabRefs.current[0];
       if (overviewElement) {

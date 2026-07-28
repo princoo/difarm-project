@@ -20,6 +20,8 @@ export type Entity =
   | 'stockTransactions'
   | 'vaccinations'
   | 'inseminations'
+  | 'medicines'
+  | 'medicineUsages'
   | 'veterinarians'
   | 'activityLogs';
 
@@ -63,6 +65,8 @@ const canCreate: Partial<Record<Entity, Role[]>> = {
   stockTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   vaccinations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   inseminations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  medicines: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   veterinarians: ['SUPERADMIN', 'ADMIN'],
   activityLogs: [],
 };
@@ -78,8 +82,10 @@ const canUpdate: Partial<Record<Entity, Role[]>> = {
   wasteLogs: ['SUPERADMIN', 'ADMIN'],
   stock: ['SUPERADMIN', 'ADMIN'],
   stockTransactions: ['SUPERADMIN', 'ADMIN'],
-  vaccinations: ['SUPERADMIN', 'ADMIN', 'VETERINARIAN'],
-  inseminations: ['SUPERADMIN', 'ADMIN', 'VETERINARIAN'],
+  vaccinations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  inseminations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  medicines: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   veterinarians: ['SUPERADMIN', 'ADMIN'],
   activityLogs: [],
 };
@@ -96,6 +102,8 @@ const canDelete: Partial<Record<Entity, Role[]>> = {
   stockTransactions: ['SUPERADMIN', 'ADMIN'],
   vaccinations: [],
   inseminations: [],
+  medicines: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   veterinarians: [],
   activityLogs: [],
 };
@@ -112,6 +120,8 @@ const canViewExtra: Partial<Record<Entity, Role[]>> = {
   stockTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   vaccinations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   inseminations: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  medicines: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   veterinarians: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   activityLogs: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   users: ['SUPERADMIN', 'ADMIN'],

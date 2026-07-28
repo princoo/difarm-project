@@ -15,6 +15,7 @@ import veterinarianRoute from '../router/routes/veterinarian.routes';
 import inserminationRoute from '../router/routes/insermination.routes';
 import activityLogRoute from '../router/routes/activityLog.routes';
 import supplierRoute from '../router/routes/supplier.routes';
+import medicineRoute from '../router/routes/medicine.routes';
 
 const routes = express.Router();
 
@@ -32,6 +33,7 @@ routes.use('/suppliers', isAuthorized, supplierRoute)
 routes.use('/vaccinations', isAuthorized, vaccinationRoute)
 routes.use('/veterinarians', isAuthorized, veterinarianRoute)
 routes.use('/inserminations', isAuthorized, inserminationRoute);
+routes.use('/medicines', isAuthorized, medicineRoute);
 routes.use('/activity-logs', activityLogRoute);
 
 export default routes;

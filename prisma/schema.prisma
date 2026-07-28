@@ -109,6 +109,8 @@ model Farm {
   inseminations  Insemination[]
   veterinarians  Veterinarian[]
   milkingPeriods MilkingPeriod[]
+  medicines      Medicine[]
+  medicineUsages MedicineUsage[]
 
   @@index([ownerId])
 }
@@ -154,6 +156,7 @@ model Cattle {
   vaccinations  Vaccination[]
   inseminations  Insemination[]
   milkingPeriods MilkingPeriod[]
+  medicineUsages MedicineUsage[]
 
   @@index([farmId])
 }
@@ -447,4 +450,56 @@ model Insemination {
   @@index([vetId])
   @@index([farmId])
 
+}
+
+enum MedicineUnit {
+  GRAMS
+  LITERS
+}
+
+/// Medicine purchased for the farm (inventory / expense)
+model Medicine {
+  id           String       @id @default(uuid())
+  farmId       String
+  name         String
+  /// Disease this medicine is meant to cure
+  diseaseName  String
+  /// Remaining quantity on hand
+  quantity     Float
+  unit         MedicineUnit @default(GRAMS)
+  /// Purchase cost (farm expense)
+  cost         Float
+  purchaseDate DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  farm         Farm         @relation(fields: [farmId], references: [id])
+  usages       MedicineUsage[]
+
+  @@map("medicines")
+  @@index([farmId])
+  @@index([farmId, name])
+}
+
+/// Medicine administered to cattle
+model MedicineUsage {
+  id          String   @id @default(uuid())
+  farmId      String
+  medicineId  String
+  cattleId    String
+  quantity    Float
+  /// Disease being treated for this use
+  diseaseName String
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  farm        Farm     @relation(fields: [farmId], references: [id])
+  medicine    Medicine @relation(fields: [medicineId], references: [id])
+  cattle      Cattle   @relation(fields: [cattleId], references: [id])
+
+  @@map("medicine_usages")
+  @@index([farmId])
+  @@index([medicineId])
+  @@index([cattleId])
 }

@@ -274,6 +274,8 @@ export const deleteFarm = async (req: Request, res: Response) => {
         await tx.production.deleteMany({ where: { farmId } });
         await tx.vaccination.deleteMany({ where: { farmId } });
         await tx.insemination.deleteMany({ where: { farmId } });
+        await tx.medicineUsage.deleteMany({ where: { farmId } });
+        await tx.medicine.deleteMany({ where: { farmId } });
         await tx.cattle.deleteMany({ where: { farmId } });
         await tx.wastesLog.deleteMany({ where: { farmId } });
         await tx.productionTotals.deleteMany({ where: { farmId } });
