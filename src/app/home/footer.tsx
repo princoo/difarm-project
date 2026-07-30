@@ -73,9 +73,7 @@ export default function Footer() {
 
     <div className="bg-neutral-300 p-3 sm:p-4 text-center text-sm sm:text-base text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
       © 2023 Copyright:{" "}
-      <a className="text-neutral-800 dark:text-neutral-400" href="/home">
-        DIFARM
-      </a>
+      <span className="text-neutral-800 dark:text-neutral-400">DIFARM</span>
     </div>
   </footer>
   );
