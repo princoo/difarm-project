@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FiArrowRight } from "react-icons/fi";
+import { FiArrowRight, FiMenu, FiX } from "react-icons/fi";
 import { Link } from "@/lib/router-compat";
 import Logo from "@/assets/logo.png";
 import { imageSrc } from "@/lib/image-src";
@@ -7,129 +7,85 @@ import { imageSrc } from "@/lib/image-src";
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
-
   return (
-    <nav className="bg-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Left - Logo */}
-          <div className="flex-shrink-0 flex items-center gap-2">
-            <img src={imageSrc(Logo)} alt="DiFarm" className="h-10 w-auto" />
-            <span className="text-2xl font-bold">
+    <nav className="bg-white shadow-lg sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-14 sm:h-16 gap-2">
+          <Link to="/home" className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <img
+              src={imageSrc(Logo)}
+              alt="DiFarm"
+              className="h-8 sm:h-10 w-auto"
+            />
+            <span className="text-lg sm:text-2xl font-bold truncate">
               <span className="text-green-500">DI</span>
               <span className="text-gray-800">FARM</span>
             </span>
-          </div>
+          </Link>
 
-          {/* Center - Menu for larger screens */}
-          {/* <div className="hidden md:flex space-x-8 items-center">
-            <Link
-              to="/home"
-              className="text-sm text-gray-600 hover:text-green-500 transition duration-200"
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              className="text-sm text-gray-600 hover:text-green-500 transition duration-200"
-            >
-              About
-            </Link>
-            <Link
-              to="/services"
-              className="text-sm text-gray-600 hover:text-green-500 transition duration-200"
-            >
-              Services
-            </Link>
-            <Link
-              to="/contact"
-              className="text-sm text-gray-600 hover:text-green-500 transition duration-200"
-            >
-              Contact
-            </Link>
-          </div> */}
-
-          {/* Right - Get Started Button */}
-          <div className="flex space-x-4 items-center">
+          {/* Desktop CTA */}
+          <div className="hidden sm:flex items-center">
             <Link
               to="/login"
-              className="inline-flex items-center bg-green-500 text-white px-6 py-3 rounded-full hover:bg-green-600 transition duration-200"
+              className="inline-flex items-center bg-green-500 text-white px-5 py-2.5 md:px-6 md:py-3 rounded-full hover:bg-green-600 transition duration-200 text-sm md:text-base"
             >
               Get Started
-              <FiArrowRight className="ml-2" size={20} />
+              <FiArrowRight className="ml-2" size={18} />
             </Link>
           </div>
 
-          {/* Hamburger Menu for Mobile */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={toggleMenu}
-              className="text-gray-600 focus:outline-none"
+          {/* Mobile: compact CTA + menu */}
+          <div className="flex sm:hidden items-center gap-2">
+            <Link
+              to="/login"
+              className="inline-flex items-center bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d={
-                    isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"
-                  }
-                />
-              </svg>
+              Get Started
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsOpen((open) => !open)}
+              className="p-2 text-gray-600 rounded-md hover:bg-gray-100"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
+            >
+              {isOpen ? <FiX size={22} /> : <FiMenu size={22} />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200">
-          <div className="px-4 pt-4 pb-4 space-y-2">
-            {/* <a
-              href="/"
-              className="block text-sm text-gray-700 hover:text-green-500 transition duration-200"
-            >
-              Home
-            </a>
+        <div className="sm:hidden bg-white border-t border-gray-200">
+          <div className="px-4 py-3 space-y-1">
             <a
-              href="/about"
-              className="block text-sm text-gray-700 hover:text-green-500 transition duration-200"
-            >
-              About
-            </a>
-            <a
-              href="/services"
-              className="block text-sm text-gray-700 hover:text-green-500 transition duration-200"
+              href="#services"
+              onClick={() => setIsOpen(false)}
+              className="block rounded-md px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-green-600"
             >
               Services
             </a>
             <a
-              href="/contact"
-              className="block text-sm text-gray-700 hover:text-green-500 transition duration-200"
+              href="#about-us"
+              onClick={() => setIsOpen(false)}
+              className="block rounded-md px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-green-600"
+            >
+              Customer Journey
+            </a>
+            <a
+              href="#contact"
+              onClick={() => setIsOpen(false)}
+              className="block rounded-md px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-green-600"
             >
               Contact
-            </a> */}
+            </a>
             <Link
               to="/login"
-              className="block text-sm text-gray-700 hover:text-green-500 transition duration-200"
+              onClick={() => setIsOpen(false)}
+              className="block rounded-md px-3 py-2.5 text-sm font-semibold text-green-600 hover:bg-green-50"
             >
               Login
             </Link>
-            {/* <a
-              href="/signup"
-              className="block bg-green-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-green-600 transition duration-200"
-            >
-              Sign Up
-            </a> */}
           </div>
         </div>
       )}
