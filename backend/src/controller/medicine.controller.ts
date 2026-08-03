@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { MedicineUnit, Roles } from "@prisma/client";
+import { MedicineItemType, MedicineUnit, Roles } from "@prisma/client";
 import ResponseHandler from "../util/responseHandler";
 import medicineService from "../service/medicine.service";
 import { paginate } from "../util/paginate";
@@ -46,14 +46,32 @@ const listMedicines = async (req: Request, res: Response) => {
   return responseHandler.send(res);
 };
 
+const normalizeItemType = (value: unknown): MedicineItemType => {
+  const raw = String(value ?? "MEDICINE").toUpperCase();
+  return raw === "TOOL" ? MedicineItemType.TOOL : MedicineItemType.MEDICINE;
+};
+
 const createMedicine = async (req: Request, res: Response) => {
   try {
-    const { name, diseaseName, quantity, unit, cost, purchaseDate, farmId } =
-      req.body;
+    const {
+      name,
+      diseaseName,
+      quantity,
+      unit,
+      cost,
+      purchaseDate,
+      farmId,
+      itemType,
+    } = req.body;
+    const type = normalizeItemType(itemType);
     const medicine = await medicineService.createMedicine({
       farmId,
       name: String(name).trim(),
-      diseaseName: String(diseaseName).trim(),
+      itemType: type,
+      diseaseName:
+        type === MedicineItemType.TOOL
+          ? String(diseaseName ?? "").trim()
+          : String(diseaseName).trim(),
       quantity: Number(quantity),
       unit: String(unit).toUpperCase() as MedicineUnit,
       cost: Number(cost),
@@ -61,7 +79,9 @@ const createMedicine = async (req: Request, res: Response) => {
     });
     responseHandler.setSuccess(
       StatusCodes.CREATED,
-      "Medicine purchase recorded successfully",
+      type === MedicineItemType.TOOL
+        ? "Tool purchase recorded successfully"
+        : "Medicine purchase recorded successfully",
       medicine
     );
   } catch (error) {
@@ -81,7 +101,8 @@ const createMedicineBatch = async (req: Request, res: Response) => {
       purchaseDate: string;
       medicines: Array<{
         name: string;
-        diseaseName: string;
+        itemType?: string;
+        diseaseName?: string;
         quantity: number;
         unit: string;
         cost: number;
@@ -91,18 +112,25 @@ const createMedicineBatch = async (req: Request, res: Response) => {
     const created = await medicineService.createMedicinesBatch({
       farmId,
       purchaseDate: new Date(purchaseDate),
-      medicines: medicines.map((item) => ({
-        name: String(item.name).trim(),
-        diseaseName: String(item.diseaseName).trim(),
-        quantity: Number(item.quantity),
-        unit: String(item.unit).toUpperCase() as MedicineUnit,
-        cost: Number(item.cost),
-      })),
+      medicines: medicines.map((item) => {
+        const type = normalizeItemType(item.itemType);
+        return {
+          name: String(item.name).trim(),
+          itemType: type,
+          diseaseName:
+            type === MedicineItemType.TOOL
+              ? String(item.diseaseName ?? "").trim()
+              : String(item.diseaseName ?? "").trim(),
+          quantity: Number(item.quantity),
+          unit: String(item.unit).toUpperCase() as MedicineUnit,
+          cost: Number(item.cost),
+        };
+      }),
     });
 
     responseHandler.setSuccess(
       StatusCodes.CREATED,
-      `${created.length} medicine purchase(s) recorded successfully`,
+      `${created.length} purchase(s) recorded successfully`,
       created
     );
   } catch (error) {
@@ -118,9 +146,11 @@ const createMedicineBatch = async (req: Request, res: Response) => {
 const updateMedicine = async (req: Request, res: Response) => {
   try {
     const medicineId = asString(req.params.medicineId);
-    const { name, diseaseName, quantity, unit, cost, purchaseDate } = req.body;
+    const { name, diseaseName, quantity, unit, cost, purchaseDate, itemType } =
+      req.body;
     const medicine = await medicineService.updateMedicine(medicineId, {
       ...(name != null ? { name: String(name).trim() } : {}),
+      ...(itemType != null ? { itemType: normalizeItemType(itemType) } : {}),
       ...(diseaseName != null
         ? { diseaseName: String(diseaseName).trim() }
         : {}),
@@ -204,8 +234,16 @@ const listUsages = async (req: Request, res: Response) => {
 
 const createUsage = async (req: Request, res: Response) => {
   try {
-    const { medicineId, cattleId, quantity, diseaseName, date, farmId } =
-      req.body;
+    const {
+      medicineId,
+      cattleId,
+      quantity,
+      diseaseName,
+      date,
+      farmId,
+      toolId,
+      toolQuantity,
+    } = req.body;
     const usage = await medicineService.createUsage({
       farmId,
       medicineId,
@@ -213,6 +251,9 @@ const createUsage = async (req: Request, res: Response) => {
       quantity: Number(quantity),
       diseaseName: String(diseaseName).trim(),
       date: new Date(date),
+      toolId: toolId ? String(toolId) : null,
+      toolQuantity:
+        toolId && toolQuantity != null ? Number(toolQuantity) : toolId ? 1 : null,
     });
     responseHandler.setSuccess(
       StatusCodes.CREATED,
@@ -234,13 +275,24 @@ const updateUsage = async (req: Request, res: Response) => {
   try {
     const usageId = asString(req.params.usageId);
     const existing = (req as any).medicineUsage;
-    const { medicineId, cattleId, quantity, diseaseName, date } = req.body;
+    const {
+      medicineId,
+      cattleId,
+      quantity,
+      diseaseName,
+      date,
+      toolId,
+      toolQuantity,
+    } = req.body;
     const usage = await medicineService.updateUsage(
       usageId,
       {
         medicineId: existing.medicineId,
         quantity: Number(existing.quantity),
         farmId: existing.farmId,
+        toolId: existing.toolId ?? null,
+        toolQuantity:
+          existing.toolQuantity != null ? Number(existing.toolQuantity) : null,
       },
       {
         ...(medicineId ? { medicineId } : {}),
@@ -248,6 +300,17 @@ const updateUsage = async (req: Request, res: Response) => {
         ...(quantity != null ? { quantity: Number(quantity) } : {}),
         ...(diseaseName ? { diseaseName: String(diseaseName).trim() } : {}),
         ...(date ? { date: new Date(date) } : {}),
+        ...(Object.prototype.hasOwnProperty.call(req.body, "toolId")
+          ? {
+              toolId: toolId ? String(toolId) : null,
+              toolQuantity:
+                toolId && toolQuantity != null
+                  ? Number(toolQuantity)
+                  : toolId
+                    ? 1
+                    : null,
+            }
+          : {}),
       }
     );
     responseHandler.setSuccess(
@@ -273,6 +336,9 @@ const removeUsage = async (req: Request, res: Response) => {
       id: existing.id,
       medicineId: existing.medicineId,
       quantity: Number(existing.quantity),
+      toolId: existing.toolId ?? null,
+      toolQuantity:
+        existing.toolQuantity != null ? Number(existing.toolQuantity) : null,
     });
     responseHandler.setSuccess(
       StatusCodes.OK,

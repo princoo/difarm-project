@@ -455,51 +455,67 @@ model Insemination {
 enum MedicineUnit {
   GRAMS
   LITERS
+  PIECES
 }
 
-/// Medicine purchased for the farm (inventory / expense)
+enum MedicineItemType {
+  MEDICINE
+  TOOL
+}
+
+/// Medicine or medical tool purchased for the farm (inventory / expense)
 model Medicine {
-  id           String       @id @default(uuid())
+  id           String           @id @default(uuid())
   farmId       String
   name         String
-  /// Disease this medicine is meant to cure
-  diseaseName  String
+  /// MEDICINE (drug) or TOOL (e.g. syringe, needle)
+  itemType     MedicineItemType @default(MEDICINE)
+  /// Disease this medicine is meant to cure (empty for tools)
+  diseaseName  String           @default("")
   /// Remaining quantity on hand
   quantity     Float
-  unit         MedicineUnit @default(GRAMS)
+  unit         MedicineUnit     @default(GRAMS)
   /// Purchase cost (farm expense)
   cost         Float
-  purchaseDate DateTime     @default(now())
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  purchaseDate DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  farm         Farm         @relation(fields: [farmId], references: [id])
-  usages       MedicineUsage[]
+  farm         Farm             @relation(fields: [farmId], references: [id])
+  usages       MedicineUsage[]  @relation("UsageMedicine")
+  toolUsages   MedicineUsage[]  @relation("UsageTool")
 
   @@map("medicines")
   @@index([farmId])
   @@index([farmId, name])
+  @@index([farmId, itemType])
 }
 
-/// Medicine administered to cattle
+/// Medicine administered to cattle (optionally with a tool such as a syringe)
 model MedicineUsage {
-  id          String   @id @default(uuid())
-  farmId      String
-  medicineId  String
-  cattleId    String
-  quantity    Float
+  id           String   @id @default(uuid())
+  farmId       String
+  medicineId   String
+  /// Optional tool used to deliver the medicine (e.g. syringe)
+  toolId       String?
+  /// How many tool units were used (default 1 when toolId is set)
+  toolQuantity Float?
+  cattleId     String
+  quantity     Float
   /// Disease being treated for this use
-  diseaseName String
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  diseaseName  String
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  farm        Farm     @relation(fields: [farmId], references: [id])
-  medicine    Medicine @relation(fields: [medicineId], references: [id])
-  cattle      Cattle   @relation(fields: [cattleId], references: [id])
+  farm         Farm     @relation(fields: [farmId], references: [id])
+  medicine     Medicine @relation("UsageMedicine", fields: [medicineId], references: [id])
+  tool         Medicine? @relation("UsageTool", fields: [toolId], references: [id])
+  cattle       Cattle   @relation(fields: [cattleId], references: [id])
 
   @@map("medicine_usages")
   @@index([farmId])
   @@index([medicineId])
+  @@index([toolId])
   @@index([cattleId])
 }

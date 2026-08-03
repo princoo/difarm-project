@@ -85,7 +85,8 @@ export const useMedicines = () => {
     purchaseDate: string;
     medicines: Array<{
       name: string;
-      diseaseName: string;
+      itemType?: string;
+      diseaseName?: string;
       quantity: number;
       unit: string;
       cost: number;
@@ -102,8 +103,8 @@ export const useMedicines = () => {
       const count = data.medicines.length;
       toast.success(
         count === 1
-          ? 'Medicine purchase recorded'
-          : `${count} medicine purchases recorded`
+          ? 'Purchase recorded'
+          : `${count} purchases recorded`
       );
       return response.data;
     } catch (err: any) {

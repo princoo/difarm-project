@@ -1,5 +1,7 @@
 import prisma from "../db/prisma";
-import { MedicineUnit } from "@prisma/client";
+import { MedicineItemType, MedicineUnit } from "@prisma/client";
+
+type DbTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 const getMedicineById = async (id: string) => {
   return prisma.medicine.findUnique({
@@ -14,6 +16,7 @@ const getUsageById = async (id: string) => {
     include: {
       farm: true,
       medicine: true,
+      tool: true,
       cattle: true,
     },
   });
@@ -50,6 +53,7 @@ const listUsages = async (
       take,
       include: {
         medicine: true,
+        tool: true,
         cattle: true,
         farm: { select: { id: true, name: true } },
       },
@@ -59,15 +63,18 @@ const listUsages = async (
   return { rows, total };
 };
 
-const createMedicine = async (data: {
+type MedicineCreateFields = {
   farmId: string;
   name: string;
+  itemType: MedicineItemType;
   diseaseName: string;
   quantity: number;
   unit: MedicineUnit;
   cost: number;
   purchaseDate: Date;
-}) => {
+};
+
+const createMedicine = async (data: MedicineCreateFields) => {
   return prisma.medicine.create({ data });
 };
 
@@ -76,6 +83,7 @@ const createMedicinesBatch = async (data: {
   purchaseDate: Date;
   medicines: Array<{
     name: string;
+    itemType: MedicineItemType;
     diseaseName: string;
     quantity: number;
     unit: MedicineUnit;
@@ -89,6 +97,7 @@ const createMedicinesBatch = async (data: {
           farmId: data.farmId,
           purchaseDate: data.purchaseDate,
           name: item.name,
+          itemType: item.itemType,
           diseaseName: item.diseaseName,
           quantity: item.quantity,
           unit: item.unit,
@@ -103,6 +112,7 @@ const updateMedicine = async (
   id: string,
   data: Partial<{
     name: string;
+    itemType: MedicineItemType;
     diseaseName: string;
     quantity: number;
     unit: MedicineUnit;
@@ -114,8 +124,40 @@ const updateMedicine = async (
 };
 
 const deleteMedicine = async (id: string) => {
+  await prisma.medicineUsage.updateMany({
+    where: { toolId: id },
+    data: { toolId: null, toolQuantity: null },
+  });
   await prisma.medicineUsage.deleteMany({ where: { medicineId: id } });
   return prisma.medicine.delete({ where: { id } });
+};
+
+const assertToolStock = async (
+  tx: DbTx,
+  toolId: string,
+  farmId: string,
+  qty: number
+) => {
+  const tool = await tx.medicine.findUnique({ where: { id: toolId } });
+  if (!tool || tool.farmId !== farmId) {
+    throw Object.assign(new Error("Tool not found on this farm"), {
+      status: 400,
+    });
+  }
+  if (tool.itemType !== MedicineItemType.TOOL) {
+    throw Object.assign(new Error("Selected item is not a tool"), {
+      status: 400,
+    });
+  }
+  if (tool.quantity < qty) {
+    throw Object.assign(
+      new Error(
+        `Only ${tool.quantity} ${tool.unit.toLowerCase()} remaining for this tool`
+      ),
+      { status: 406 }
+    );
+  }
+  return tool;
 };
 
 const createUsage = async (data: {
@@ -125,6 +167,8 @@ const createUsage = async (data: {
   quantity: number;
   diseaseName: string;
   date: Date;
+  toolId?: string | null;
+  toolQuantity?: number | null;
 }) => {
   return prisma.$transaction(async (tx) => {
     const medicine = await tx.medicine.findUnique({
@@ -138,6 +182,12 @@ const createUsage = async (data: {
         status: 400,
       });
     }
+    if (medicine.itemType === MedicineItemType.TOOL) {
+      throw Object.assign(
+        new Error("Select a medicine (not a tool) for treatment"),
+        { status: 400 }
+      );
+    }
     if (medicine.quantity < data.quantity) {
       throw Object.assign(
         new Error(
@@ -149,17 +199,44 @@ const createUsage = async (data: {
 
     const cattle = await tx.cattle.findUnique({ where: { id: data.cattleId } });
     if (!cattle || cattle.farmId !== data.farmId) {
-      throw Object.assign(
-        new Error("Cattle not found on this farm"),
-        { status: 400 }
-      );
+      throw Object.assign(new Error("Cattle not found on this farm"), {
+        status: 400,
+      });
     }
 
-    const usage = await tx.medicineUsage.create({ data });
+    const toolId = data.toolId?.trim() || null;
+    const toolQuantity = toolId ? Number(data.toolQuantity ?? 1) : null;
+
+    if (toolId && toolQuantity) {
+      await assertToolStock(tx, toolId, data.farmId, toolQuantity);
+    }
+
+    const usage = await tx.medicineUsage.create({
+      data: {
+        farmId: data.farmId,
+        medicineId: data.medicineId,
+        cattleId: data.cattleId,
+        quantity: data.quantity,
+        diseaseName: data.diseaseName,
+        date: data.date,
+        toolId,
+        toolQuantity,
+      },
+      include: { medicine: true, tool: true, cattle: true },
+    });
+
     await tx.medicine.update({
       where: { id: data.medicineId },
       data: { quantity: { decrement: data.quantity } },
     });
+
+    if (toolId && toolQuantity) {
+      await tx.medicine.update({
+        where: { id: toolId },
+        data: { quantity: { decrement: toolQuantity } },
+      });
+    }
+
     return usage;
   });
 };
@@ -170,6 +247,8 @@ const updateUsage = async (
     medicineId: string;
     quantity: number;
     farmId: string;
+    toolId?: string | null;
+    toolQuantity?: number | null;
   },
   data: Partial<{
     medicineId: string;
@@ -177,29 +256,54 @@ const updateUsage = async (
     quantity: number;
     diseaseName: string;
     date: Date;
+    toolId: string | null;
+    toolQuantity: number | null;
   }>
 ) => {
   return prisma.$transaction(async (tx) => {
     const nextMedicineId = data.medicineId || existing.medicineId;
     const nextQty = data.quantity ?? existing.quantity;
 
-    // Restore previous stock
+    const toolProvided = Object.prototype.hasOwnProperty.call(data, "toolId");
+    const nextToolId = toolProvided
+      ? data.toolId?.trim() || null
+      : existing.toolId || null;
+    const nextToolQty = nextToolId
+      ? Number(
+          data.toolQuantity ??
+            (toolProvided ? 1 : existing.toolQuantity ?? 1)
+        )
+      : null;
+
+    // Restore previous medicine stock
     await tx.medicine.update({
       where: { id: existing.medicineId },
       data: { quantity: { increment: existing.quantity } },
     });
 
+    // Restore previous tool stock
+    if (existing.toolId && existing.toolQuantity) {
+      await tx.medicine.update({
+        where: { id: existing.toolId },
+        data: { quantity: { increment: existing.toolQuantity } },
+      });
+    }
+
     const medicine = await tx.medicine.findUnique({
       where: { id: nextMedicineId },
     });
     if (!medicine || medicine.farmId !== existing.farmId) {
+      throw Object.assign(new Error("Medicine not found on this farm"), {
+        status: 400,
+      });
+    }
+    if (medicine.itemType === MedicineItemType.TOOL) {
       throw Object.assign(
-        new Error("Medicine not found on this farm"),
+        new Error("Select a medicine (not a tool) for treatment"),
         { status: 400 }
       );
     }
     if (medicine.quantity < nextQty) {
-      // rollback restore by throwing — transaction aborts
       throw Object.assign(
         new Error(
           `Only ${medicine.quantity} ${medicine.unit.toLowerCase()} remaining for this medicine`
@@ -213,11 +317,14 @@ const updateUsage = async (
         where: { id: data.cattleId },
       });
       if (!cattle || cattle.farmId !== existing.farmId) {
-        throw Object.assign(
-          new Error("Cattle not found on this farm"),
-          { status: 400 }
-        );
+        throw Object.assign(new Error("Cattle not found on this farm"), {
+          status: 400,
+        });
       }
+    }
+
+    if (nextToolId && nextToolQty) {
+      await assertToolStock(tx, nextToolId, existing.farmId, nextToolQty);
     }
 
     const updated = await tx.medicineUsage.update({
@@ -228,14 +335,24 @@ const updateUsage = async (
         ...(data.quantity != null ? { quantity: data.quantity } : {}),
         ...(data.diseaseName ? { diseaseName: data.diseaseName } : {}),
         ...(data.date ? { date: data.date } : {}),
+        ...(toolProvided || data.toolQuantity != null
+          ? { toolId: nextToolId, toolQuantity: nextToolQty }
+          : {}),
       },
-      include: { medicine: true, cattle: true },
+      include: { medicine: true, tool: true, cattle: true },
     });
 
     await tx.medicine.update({
       where: { id: nextMedicineId },
       data: { quantity: { decrement: nextQty } },
     });
+
+    if (nextToolId && nextToolQty) {
+      await tx.medicine.update({
+        where: { id: nextToolId },
+        data: { quantity: { decrement: nextToolQty } },
+      });
+    }
 
     return updated;
   });
@@ -245,12 +362,20 @@ const deleteUsage = async (usage: {
   id: string;
   medicineId: string;
   quantity: number;
+  toolId?: string | null;
+  toolQuantity?: number | null;
 }) => {
   return prisma.$transaction(async (tx) => {
     await tx.medicine.update({
       where: { id: usage.medicineId },
       data: { quantity: { increment: usage.quantity } },
     });
+    if (usage.toolId && usage.toolQuantity) {
+      await tx.medicine.update({
+        where: { id: usage.toolId },
+        data: { quantity: { increment: usage.toolQuantity } },
+      });
+    }
     return tx.medicineUsage.delete({ where: { id: usage.id } });
   });
 };

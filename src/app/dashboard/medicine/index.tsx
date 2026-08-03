@@ -87,18 +87,36 @@ const MedicineRecords = () => {
   const medicineList = medicines?.data?.data ?? [];
   const usageList = usages?.data?.data ?? [];
 
-  const unitLabel = (unit?: string) => (unit === 'LITERS' ? 'L' : 'g');
+  const unitLabel = (unit?: string) =>
+    unit === 'LITERS' ? 'L' : unit === 'PIECES' ? 'pcs' : 'g';
 
   const medicineColumns: TableColumnV2<any>[] = [
     {
-      title: 'Medicine',
+      title: 'Type',
+      accessor: 'itemType',
+      render: (row) => (
+        <span
+          className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold ${
+            row?.itemType === 'TOOL'
+              ? 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200'
+              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+          }`}
+        >
+          {row?.itemType === 'TOOL' ? 'Tool' : 'Medicine'}
+        </span>
+      ),
+    },
+    {
+      title: 'Name',
       accessor: 'name',
       render: (row) => <p className="font-medium">{row?.name}</p>,
     },
     {
       title: 'Cures (disease)',
       accessor: 'diseaseName',
-      render: (row) => <p>{row?.diseaseName}</p>,
+      render: (row) => (
+        <p>{row?.itemType === 'TOOL' ? '—' : row?.diseaseName || '—'}</p>
+      ),
     },
     {
       title: 'Qty on hand',
@@ -168,6 +186,23 @@ const MedicineRecords = () => {
       title: 'Medicine',
       accessor: 'medicine.name',
       render: (row) => <p>{row?.medicine?.name}</p>,
+    },
+    {
+      title: 'Tool used',
+      accessor: 'tool.name',
+      render: (row) => (
+        <p>
+          {row?.tool?.name
+            ? `${row.tool.name}${
+                row.toolQuantity != null
+                  ? ` (${Number(row.toolQuantity).toLocaleString()} ${unitLabel(
+                      row.tool.unit
+                    )})`
+                  : ''
+              }`
+            : '—'}
+        </p>
+      ),
     },
     {
       title: 'Cattle',
@@ -305,7 +340,7 @@ const MedicineRecords = () => {
                 className="btn btn-primary btn-sm flex items-center gap-1"
               >
                 <IconPlus />
-                Add medicine purchase
+                Add purchase
               </button>
             )}
           </div>
@@ -318,7 +353,7 @@ const MedicineRecords = () => {
             lastPage={medicines?.data?.lastPage ?? 1}
             previousPage={medicines?.data?.previousPage ?? 0}
             nextPage={medicines?.data?.nextPage ?? 0}
-            tableName="Medicine stock"
+            tableName="Medicine & tool stock"
           />
         </div>
       ) : (
@@ -328,7 +363,10 @@ const MedicineRecords = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (!medicineList.length) {
+                  const hasMedicine = medicineList.some(
+                    (m: any) => (m.itemType ?? 'MEDICINE') !== 'TOOL'
+                  );
+                  if (!hasMedicine) {
                     toast.error('Record a medicine purchase first.');
                     return;
                   }
@@ -394,8 +432,10 @@ const MedicineRecords = () => {
         onConfirm={confirmDelete}
         message={
           deleteTarget?.type === 'medicine'
-            ? 'Delete this medicine and all its usage records? Stock history will be removed.'
-            : 'Delete this medicine usage? Stock will be restored.'
+            ? `Delete this ${
+                deleteTarget.row?.itemType === 'TOOL' ? 'tool' : 'medicine'
+              } and related usage records? Stock history will be removed.`
+            : 'Delete this medicine usage? Medicine and tool stock will be restored.'
         }
       />
     </div>
