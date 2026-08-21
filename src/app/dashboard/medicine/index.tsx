@@ -13,6 +13,7 @@ import {
 } from '@/utils/permissions';
 import { getFarmId } from '@/utils/farmId';
 import { toast } from 'react-hot-toast';
+import { useSafeT } from '@/hooks/useSafeT';
 import { useLocation, useNavigate } from '@/lib/router-compat';
 import AddMedicineModal from './add_medicine';
 import UpdateMedicineModal from './update_medicine';
@@ -22,12 +23,13 @@ import ConfirmDeleteModal from './delete';
 
 type MedicineSubTab = 'stock' | 'usage';
 
-const SUB_TABS: { key: MedicineSubTab; label: string }[] = [
-  { key: 'stock', label: 'Purchases / stock' },
-  { key: 'usage', label: 'Usage' },
+const SUB_TABS: { key: MedicineSubTab; labelKey: string }[] = [
+  { key: 'stock', labelKey: 'health.purchasesStock' },
+  { key: 'usage', labelKey: 'health.usage' },
 ];
 
 const MedicineRecords = () => {
+  const { t } = useSafeT();
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -323,7 +325,7 @@ const MedicineRecords = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300 dark:text-gray-400 dark:hover:text-white dark:hover:border-gray-600'
                 }`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             );
           })}
@@ -340,7 +342,7 @@ const MedicineRecords = () => {
                 className="btn btn-primary btn-sm flex items-center gap-1"
               >
                 <IconPlus />
-                Add purchase
+                {t('health.addPurchase')}
               </button>
             )}
           </div>
@@ -375,7 +377,7 @@ const MedicineRecords = () => {
                 className="btn btn-primary btn-sm flex items-center gap-1"
               >
                 <IconPlus />
-                Record medicine usage
+                {t('health.recordUsage')}
               </button>
             )}
           </div>

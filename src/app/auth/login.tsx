@@ -1,13 +1,15 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Link, useNavigate } from '@/lib/router-compat';
 import { InputField } from '@/components/input';
-import Logo from '@/assets/logo.png';
+import Logo from '@/assets/landing/logo-nav-transparent.png';
 import img2 from '@/assets/istockphoto-2151351987-2048x2048-Photoroom.png';
 import { useLogin } from '@/hooks/api/auth';
 import { resolvePostLoginDestination } from '@/utils/postLoginRouting';
 import { imageSrc } from '@/lib/image-src';
+import { useSafeT } from '@/hooks/useSafeT';
 
 const Login: React.FC = () => {
+    const { t } = useSafeT();
     const navigate = useNavigate();
     const { loadingLogin, login } = useLogin();
     const [credentials, setCredentials] = useState({ username: '', password: '' });
@@ -39,19 +41,19 @@ const Login: React.FC = () => {
             <div className="flex justify-center items-center">
                 <div className="max-w-md w-full space-y-8 p-2">
                     <div className="text-center">
-                        <img src={imageSrc(Logo)} alt="Farm Logo" className="w-32 mx-auto" />
+                        <img src={imageSrc(Logo)} alt="DiFarm" className="mx-auto h-14 w-auto max-w-[200px] object-contain bg-transparent" />
                         <h2 className="mt-6 text-3xl font-extrabold text-primary dark:text-white">
-                            Welcome back
+                            {t('auth.welcomeBack')}
                         </h2>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            Sign in with your email and password
+                            {t('auth.signInHint')}
                         </p>
                     </div>
                     <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                         <InputField
                             type="email"
                             name="username"
-                            label="Email"
+                            label={t('auth.email')}
                             placeholder="you@difarm.com"
                             value={credentials.username}
                             onChange={handleChange}
@@ -62,8 +64,8 @@ const Login: React.FC = () => {
                         <InputField
                             type="password"
                             name="password"
-                            label="Password"
-                            placeholder="Enter your password"
+                            label={t('auth.password')}
+                            placeholder={t('auth.password')}
                             value={credentials.password}
                             onChange={handleChange}
                             className="h-13"
@@ -80,7 +82,7 @@ const Login: React.FC = () => {
                             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
                             disabled={loadingLogin}
                         >
-                            {loadingLogin ? 'Signing in...' : 'Sign In'}
+                            {loadingLogin ? t('common.loading') : t('nav.signIn')}
                         </button>
                     </form>
                 </div>

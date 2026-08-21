@@ -8,20 +8,17 @@ import {
   getFarmId,
   setFarmId,
 } from '@/utils/farmId';
+import { useSafeT } from '@/hooks/useSafeT';
 
 type FarmOption = { id: string; name: string; status?: boolean };
 
 type Props = {
-  /** Called after the selected farm scope changes */
   onChange?: (scope: string) => void;
   className?: string;
 };
 
-/**
- * Super-admin farm filter: "All farms" or a specific farm.
- * Persists selection via FarmId (cleared when All farms).
- */
 export default function SuperAdminFarmFilter({ onChange, className }: Props) {
+  const { t } = useSafeT();
   const { farms, loading, fetchFarms } = useFarms({ autoFetch: true });
   const [value, setValue] = useState<string>(() => getFarmId() ?? ALL_FARMS_SCOPE);
 
@@ -29,7 +26,6 @@ export default function SuperAdminFarmFilter({ onChange, className }: Props) {
     fetchFarms();
   }, [fetchFarms]);
 
-  // Keep in sync if FarmId changes elsewhere (e.g. Farms list "view")
   useEffect(() => {
     const sync = () => setValue(getFarmId() ?? ALL_FARMS_SCOPE);
     window.addEventListener('storage', sync);
@@ -47,10 +43,10 @@ export default function SuperAdminFarmFilter({ onChange, className }: Props) {
     if (!Array.isArray(list)) return [];
     return list.map((f: any) => ({
       id: f.id,
-      name: f.name || 'Unnamed farm',
+      name: f.name || t('dashboard.unnamedFarm'),
       status: f.status,
     }));
-  }, [farms]);
+  }, [farms, t]);
 
   const handleChange = (next: string) => {
     setValue(next);
@@ -64,8 +60,11 @@ export default function SuperAdminFarmFilter({ onChange, className }: Props) {
 
   return (
     <div className={className}>
-      <label htmlFor="sa-farm-filter" className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-        Farm filter
+      <label
+        htmlFor="sa-farm-filter"
+        className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400"
+      >
+        {t('dashboard.farmFilter')}
       </label>
       <select
         id="sa-farm-filter"
@@ -74,11 +73,11 @@ export default function SuperAdminFarmFilter({ onChange, className }: Props) {
         disabled={loading}
         className="form-select min-w-[220px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-800 dark:text-white"
       >
-        <option value={ALL_FARMS_SCOPE}>All farms</option>
+        <option value={ALL_FARMS_SCOPE}>{t('dashboard.allFarms')}</option>
         {options.map((f) => (
           <option key={f.id} value={f.id}>
             {f.name}
-            {f.status === false ? ' (inactive)' : ''}
+            {f.status === false ? ` ${t('dashboard.inactive')}` : ''}
           </option>
         ))}
       </select>

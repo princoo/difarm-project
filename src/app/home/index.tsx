@@ -1,172 +1,516 @@
-import Navbar from "@/app/home/Nav";
-import { motion } from "framer-motion";
-import { FiArrowRight } from "react-icons/fi";
-import heroImage from "@/assets/images/cows-green-field-blue-sky.jpg";
-import marketingIcon from "@/assets/images/Market.png";
-import cattleManagementIcon from "@/assets/images/istockphoto-2148142112-2048x2048.jpg";
-import productionManagementIcon from "@/assets/images/10181745.jpg";
-import stockManagementIcon from "@/assets/images/395.jpg";
-import cattleHealthIcon from "@/assets/images/Healthcare.png";
-import AboutUs from "./About";
-import ServicesCard from "./Service";
-import Index from "./Hero";
-import Footer from "./footer";
+import { useState } from "react";
+import { Link } from "@/lib/router-compat";
 import { imageSrc } from "@/lib/image-src";
+import { useSafeT } from "@/hooks/useSafeT";
+import Navbar from "@/app/home/Nav";
+import ContactSection from "./Hero";
+import Footer from "./footer";
 
-const previewServices = [
-  {
-    icon: cattleManagementIcon,
-    title: "Cattle Management",
-    description: "Track your cattle growth, health, and productivity.",
-  },
-  {
-    icon: marketingIcon,
-    title: "Marketing Production",
-    description: "Boost your sales with our comprehensive marketing tools.",
-  },
-  {
-    icon: productionManagementIcon,
-    title: "Production Management",
-    description: "Optimize your production cycle and maximize your output.",
-  },
-];
+import heroImage from "@/assets/landing/hero-cow.png";
+import aboutImage from "@/assets/landing/about-cows.png";
+import servicesImage from "@/assets/landing/services-cows.png";
+import processImage from "@/assets/landing/process-digital.png";
+import productionShowcase from "@/assets/landing/showcase-production.png";
+import usersShowcase from "@/assets/landing/showcase-users.png";
 
-const allServices = [
-  ...previewServices,
-  {
-    icon: stockManagementIcon,
-    title: "Stock Management",
-    description: "Manage your inventory with ease.",
-  },
-  {
-    icon: cattleHealthIcon,
-    title: "Cattle Health",
-    description: "Monitor the health and wellness of your livestock.",
-  },
-];
+import iconSparkle from "@/assets/landing/icons/sparkle.svg";
+import iconChip from "@/assets/landing/icons/chip.svg";
+import iconLivestock from "@/assets/landing/icons/livestock.svg";
+import iconHealth from "@/assets/landing/icons/health.svg";
+import iconLocation from "@/assets/landing/icons/location.svg";
+import iconInsights from "@/assets/landing/icons/insights.svg";
+import iconCheck from "@/assets/landing/icons/check.svg";
+import iconChevron from "@/assets/landing/icons/chevron.svg";
+
+function Accent({
+  label,
+  dark = false,
+}: {
+  label: string;
+  dark?: boolean;
+}) {
+  return (
+    <div
+      className={`inline-flex shrink-0 items-center justify-center gap-[5px] rounded-[40px] py-[5px] pl-2 pr-3.5 ${
+        dark ? "bg-[#08223d]" : "bg-[#376a3b]"
+      }`}
+    >
+      <img src={imageSrc(iconSparkle)} alt="" className="size-6" />
+      <span className="text-sm font-medium tracking-[0.7px] text-white whitespace-nowrap">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function CheckItem({ text }: { text: string }) {
+  return (
+    <div className="flex w-full items-start gap-2.5">
+      <img src={imageSrc(iconCheck)} alt="" className="size-6 shrink-0" />
+      <p className="flex-1 text-base leading-normal text-[#08223d]">{text}</p>
+    </div>
+  );
+}
+
+function SolutionCard({
+  icon,
+  title,
+  desc,
+}: {
+  icon: string | { src: string };
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="flex w-full flex-col items-start overflow-clip rounded-[14px] border border-solid border-[#dde4e2] bg-white px-8 pb-[26px] pt-[30px]">
+      <div className="flex w-full flex-col gap-4">
+        <div className="inline-flex w-fit items-center justify-center rounded-[60px] bg-[#eaf3ea] p-2.5">
+          <div className="relative size-10 overflow-clip">
+            <img
+              src={imageSrc(icon)}
+              alt=""
+              className="absolute inset-0 size-full object-contain"
+            />
+          </div>
+        </div>
+        <div className="flex w-full flex-col gap-2 leading-normal">
+          <p className="font-outfit text-[22px] font-medium capitalize text-[#08223d]">
+            {title}
+          </p>
+          <p className="text-base text-[#718087]">{desc}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Home() {
+  const { t } = useSafeT();
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const stats = [
+    {
+      value: t("home.statFarmsValue"),
+      label: t("home.statFarmsLabel"),
+      desc: t("home.statFarmsDesc"),
+    },
+    {
+      value: t("home.statSoftwareValue"),
+      label: t("home.statSoftwareLabel"),
+      desc: t("home.statSoftwareDesc"),
+    },
+    {
+      value: t("home.statDistrictsValue"),
+      label: t("home.statDistrictsLabel"),
+      desc: t("home.statDistrictsDesc"),
+    },
+  ];
+
+  const aboutChips = [
+    t("home.chipLocation"),
+    t("home.chipRecords"),
+    t("home.chipHealth"),
+    t("home.chipPerformance"),
+  ];
+
+  const solutions = [
+    {
+      icon: iconLivestock,
+      title: t("home.solutionLivestock"),
+      desc: t("home.solutionLivestockDesc"),
+    },
+    {
+      icon: iconHealth,
+      title: t("home.solutionHealth"),
+      desc: t("home.solutionHealthDesc"),
+    },
+    {
+      icon: iconLocation,
+      title: t("home.solutionTracking"),
+      desc: t("home.solutionTrackingDesc"),
+    },
+    {
+      icon: iconInsights,
+      title: t("home.solutionInsights"),
+      desc: t("home.solutionInsightsDesc"),
+    },
+  ];
+
+  const processSteps = [
+    {
+      num: "01",
+      title: t("home.step1Title"),
+      desc: t("home.step1Desc"),
+      gap: "gap-[58px]",
+      tw: "w-[185px]",
+    },
+    {
+      num: "02",
+      title: t("home.step2Title"),
+      desc: t("home.step2Desc"),
+      gap: "gap-10",
+      tw: "w-[200px]",
+    },
+    {
+      num: "03",
+      title: t("home.step3Title"),
+      desc: t("home.step3Desc"),
+      gap: "gap-[60px]",
+      tw: "w-[185px]",
+    },
+    {
+      num: "04",
+      title: t("home.step4Title"),
+      desc: t("home.step4Desc"),
+      gap: "gap-[62px]",
+      tw: "w-[185px]",
+    },
+  ];
+
+  const dashboardFeatures = [
+    t("home.dashFeature1"),
+    t("home.dashFeature2"),
+    t("home.dashFeature3"),
+    t("home.dashFeature4"),
+    t("home.dashFeature5"),
+    t("home.dashFeature6"),
+    t("home.dashFeature7"),
+    t("home.dashFeature8"),
+  ];
+
+  const collarFeatures = [
+    t("home.collarFeature1"),
+    t("home.collarFeature2"),
+    t("home.collarFeature3"),
+    t("home.collarFeature4"),
+    t("home.collarFeature5"),
+    t("home.collarFeature6"),
+    t("home.collarFeature7"),
+  ];
+
+  const faqItems = [
+    { q: t("home.faqQ1"), a: t("home.faqA1") },
+    { q: t("home.faqQ2"), a: t("home.faqA2") },
+    { q: t("home.faqQ3"), a: t("home.faqA3") },
+    { q: t("home.faqQ4"), a: t("home.faqA4") },
+    { q: t("home.faqQ5"), a: t("home.faqA5") },
+    { q: t("home.faqQ6"), a: t("home.faqA6") },
+  ];
+
   return (
-    <div className="scrollbar-hidden font-outfit overflow-x-hidden">
+    <div className="relative flex w-full flex-col items-start overflow-x-hidden bg-[#f5f7f6] font-outfit">
       <Navbar />
 
-      <div className="bg-gray-50 min-h-screen">
-        {/* Hero */}
-        <section
-          className="relative flex items-center justify-center min-h-[70vh] sm:min-h-[75vh] md:h-[90vh]"
-          style={{
-            backgroundImage: `url(${imageSrc(heroImage)})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/30" />
-
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="relative z-10 w-full max-w-4xl mx-auto text-white px-4 sm:px-6 md:px-8 text-center py-16 sm:py-20"
-          >
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-3 sm:mb-4 leading-tight text-green-500">
-              DI FARM
+      <section
+        id="home"
+        className="relative h-[640px] w-full shrink-0 overflow-clip sm:h-[700px] lg:h-[760px]"
+      >
+        <img
+          alt=""
+          src={imageSrc(heroImage)}
+          className="pointer-events-none absolute inset-0 size-full max-w-none object-cover"
+        />
+        <div className="absolute top-[160px] left-5 flex w-[min(690px,calc(100%-2.5rem))] flex-col items-start gap-[30px] sm:left-10 sm:top-[180px] lg:left-[78px] lg:top-[220px]">
+          <div className="flex w-full flex-col items-start gap-4">
+            <h1 className="w-full text-4xl font-semibold capitalize leading-normal text-[#08223d] sm:text-5xl lg:text-[52px]">
+              {t("home.heroTitleLine1")}
+              <br />
+              {t("home.heroTitleLine2")}
             </h1>
-            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed text-white/95">
-              Manage your farm efficiently with our powerful tools and analytics,
-              designed to maximize productivity and minimize effort.
+            <p className="w-full text-base leading-normal text-[#3f4f58]">
+              {t("home.heroSubtitle")}
             </p>
+          </div>
+          <div className="flex flex-wrap items-start gap-4">
             <a
               href="#contact"
-              className="inline-flex items-center font-bold bg-green-500 text-white px-5 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-full hover:bg-green-600 transition-all duration-300 shadow-lg text-sm sm:text-base"
+              className="flex shrink-0 items-center justify-center rounded-[40px] bg-[#08223d] px-6 py-3 text-[15px] font-medium text-white"
             >
-              Get Started
-              <FiArrowRight className="ml-2" size={20} />
+              {t("home.requestAppointment")}
             </a>
-          </motion.div>
-        </section>
+            <Link
+              to="/login"
+              className="flex shrink-0 items-center justify-center rounded-[40px] border border-solid border-[#376a3b] px-6 py-3 text-[15px] font-medium text-[#376a3b]"
+            >
+              {t("home.registerFarm")}
+            </Link>
+          </div>
+        </div>
+      </section>
 
-        {/* Preview cards — flow layout (no absolute overflow on mobile) */}
-        <section className="relative z-20 px-4 sm:px-6 -mt-10 sm:-mt-14 md:-mt-20 pb-6 sm:pb-8">
-          <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl">
-            {previewServices.map((service, index) => (
-              <motion.div
-                key={service.title}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: index * 0.12 }}
-                className="bg-white p-5 sm:p-6 md:p-8 rounded-2xl shadow-xl flex flex-col items-center text-center w-full"
-              >
-                <div className="bg-green-100 p-3 sm:p-4 rounded-full mb-4 sm:mb-6">
-                  <img
-                    src={imageSrc(service.icon)}
-                    alt={service.title}
-                    className="h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 object-cover rounded-full"
-                  />
+      <section className="flex w-full shrink-0 flex-col items-center bg-[#eaf3ea] px-5 py-[50px] sm:px-10 lg:px-20">
+        <div className="flex w-full max-w-[1280px] flex-col items-start justify-between gap-10 lg:flex-row lg:items-center">
+          <h2 className="shrink-0 max-w-[200px] text-[28px] font-medium capitalize leading-normal text-[#08223d]">
+            {t("home.statsTitle")}
+          </h2>
+          <div className="flex w-full flex-col items-start gap-8 leading-normal sm:flex-row sm:gap-[31px] lg:w-auto">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex w-full flex-col gap-3.5 sm:w-[267px]">
+                <div className="flex flex-col gap-[5px] capitalize text-[#08223d]">
+                  <p className="text-[32px] font-semibold">{stat.value}</p>
+                  <p className="text-[22px] font-medium">{stat.label}</p>
                 </div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-green-600 mb-2 sm:mb-4">
-                  {service.title}
-                </h3>
-                <p className="text-sm sm:text-base text-gray-700">
-                  {service.description}
-                </p>
-              </motion.div>
+                <p className="text-sm text-[#3f4f58]">{stat.desc}</p>
+              </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Services */}
-        <section id="services" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-10 bg-gray-100">
-          <div className="container mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-green-600">
-              Our Services
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-3xl mx-auto mb-8 sm:mb-12 px-1">
-              Our services are tailored to help you manage every aspect of your
-              farm, from cattle health to marketing and stock management.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {allServices.map((service) => (
-                <ServicesCard
-                  key={service.title}
-                  title={service.title}
-                  description={service.description}
-                  image={imageSrc(service.icon)}
-                />
+      <section
+        id="about"
+        className="flex w-full shrink-0 flex-col items-center bg-white px-5 py-[60px] sm:px-10 lg:px-20"
+      >
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
+          <div className="relative w-full shrink-0 lg:w-[min(653px,48%)]">
+            <div className="relative aspect-[653/400] w-full overflow-hidden rounded-[30px] sm:aspect-[653/435]">
+              <img
+                alt=""
+                src={imageSrc(aboutImage)}
+                className="absolute inset-0 size-full rounded-[30px] object-cover"
+              />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {aboutChips.map((chip) => (
+                <div
+                  key={chip}
+                  className="inline-flex items-center gap-[9px] rounded-[130px] bg-[#08223d] py-[5px] pl-2.5 pr-[17px]"
+                >
+                  <img src={imageSrc(iconChip)} alt="" className="size-[19px]" />
+                  <p className="text-sm font-semibold leading-[22px] text-[#f5f7f6]">
+                    {chip}
+                  </p>
+                </div>
               ))}
             </div>
           </div>
-        </section>
 
-        {/* Customer journey */}
-        <section id="about-us" className="py-12 sm:py-16 md:py-20 bg-gray-50">
-          <div className="mx-auto px-4 sm:px-6 md:px-10 text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-green-600">
-              Customer Journey
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto mb-8 sm:mb-12">
-              What our customers are saying about us
+          <div className="flex w-full flex-col items-start justify-center gap-4 lg:flex-1">
+            <Accent label={t("home.aboutBadge")} />
+            <p className="text-[28px] font-medium capitalize leading-tight text-[#08223d] sm:text-[38px] sm:leading-[50px]">
+              {t("home.aboutTitle")}
             </p>
-            <AboutUs />
+            <div className="space-y-4 text-base leading-normal text-[#3f4f58]">
+              <p>{t("home.aboutP1")}</p>
+              <p>{t("home.aboutP2")}</p>
+            </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Contact */}
-        <section id="contact" className="py-12 sm:py-16 md:py-20 bg-gray-100">
-          <div className="container mx-auto px-4 sm:px-6 text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600">
-              Contact Us
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto mb-8 sm:mb-12 mt-3">
-              Have any questions? Get in touch with us through any of the
-              platforms below.
+      <section
+        id="services"
+        className="flex w-full shrink-0 flex-col items-center justify-center gap-10 px-2.5 py-[60px]"
+      >
+        <div className="flex w-full max-w-[680px] flex-col items-center gap-5 text-center">
+          <Accent label={t("home.solutionsBadge")} />
+          <p className="text-[28px] font-medium capitalize leading-[50px] text-[#08223d] sm:text-[38px]">
+            {t("home.solutionsTitle")}
+          </p>
+        </div>
+
+        <div className="flex w-full max-w-[1285px] flex-col items-stretch gap-5 lg:flex-row lg:items-center">
+          <div className="flex flex-1 flex-col gap-5">
+            {solutions.slice(0, 2).map((item) => (
+              <SolutionCard key={item.title} {...item} />
+            ))}
+          </div>
+
+          <div className="relative hidden h-auto min-h-[520px] w-[402px] shrink-0 overflow-hidden rounded-[14px] lg:block">
+            <img
+              alt=""
+              src={imageSrc(servicesImage)}
+              className="absolute inset-0 size-full max-w-none rounded-[14px] object-cover"
+            />
+            <div className="absolute inset-0 rounded-[14px] bg-black/15" />
+          </div>
+
+          <div className="flex flex-1 flex-col gap-5">
+            {solutions.slice(2).map((item) => (
+              <SolutionCard key={item.title} {...item} />
+            ))}
+          </div>
+
+          <div className="relative h-[260px] w-full overflow-hidden rounded-[14px] sm:h-[320px] lg:hidden">
+            <img
+              alt=""
+              src={imageSrc(servicesImage)}
+              className="size-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/15" />
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="process"
+        className="flex w-full shrink-0 flex-col items-center bg-[#376a3b] px-5 py-[60px] sm:px-10 lg:px-20"
+      >
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-16">
+          <div className="flex w-full max-w-[548px] flex-col items-start justify-center gap-5 lg:w-[min(548px,42%)] lg:shrink-0">
+            <div className="flex w-full flex-col items-start gap-4">
+              <Accent label={t("home.processBadge")} dark />
+              <div className="flex w-full flex-col items-start gap-[5px]">
+                <p className="w-full text-[28px] font-medium capitalize leading-[50px] text-[#08223d] sm:text-[38px]">
+                  {t("home.processTitle")}
+                </p>
+                <p className="w-full text-base leading-normal text-white">
+                  {t("home.processIntro")}
+                </p>
+              </div>
+            </div>
+            <div className="relative aspect-[1024/819] w-full overflow-hidden rounded-xl bg-[#2f5a33]">
+              <img
+                alt=""
+                src={imageSrc(processImage)}
+                className="absolute inset-0 size-full rounded-xl object-contain object-center"
+              />
+            </div>
+          </div>
+
+          <div className="flex w-full flex-1 flex-col items-stretch justify-center gap-5 leading-normal lg:max-w-[652px]">
+            {processSteps.map((step) => (
+              <div
+                key={step.num}
+                className={`flex w-full shrink-0 flex-col items-start gap-3 rounded-xl bg-[#4d8251] px-[30px] py-5 sm:flex-row sm:items-center sm:gap-6 ${step.gap}`}
+              >
+                <div className={`flex shrink-0 flex-col items-start gap-[5px] ${step.tw}`}>
+                  <p className="w-full text-xl font-semibold text-[#d99b35]">
+                    {step.num}
+                  </p>
+                  <p className="w-full text-lg font-medium capitalize text-white">
+                    {step.title}
+                  </p>
+                </div>
+                <p className="min-w-0 flex-1 text-base text-[#cacaca]">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="flex w-full shrink-0 flex-col items-start bg-white px-5 py-[60px] sm:px-10 lg:px-20">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-12 lg:flex-row lg:gap-24">
+          <div className="flex min-w-0 flex-1 flex-col items-start">
+            <div className="flex w-full flex-col items-start gap-6">
+              <div className="flex w-full flex-col items-start gap-2.5">
+                <Accent label={t("home.dashboardBadge")} />
+                <p className="text-[28px] font-medium capitalize leading-tight text-[#08223d] sm:text-[38px] sm:leading-[50px]">
+                  {t("home.dashboardTitle")}
+                </p>
+                <p className="text-base leading-normal text-[#3f4f58]">
+                  {t("home.dashboardIntro")}
+                </p>
+              </div>
+              <div className="flex w-full flex-col items-start gap-1.5">
+                {dashboardFeatures.map((feature) => (
+                  <CheckItem key={feature} text={feature} />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="relative h-[280px] w-full shrink-0 overflow-hidden rounded-xl sm:h-[400px] lg:h-[440px] lg:w-[647px]">
+            <div className="absolute inset-0 rounded-xl bg-[#efeeee]" />
+            <img
+              alt=""
+              src={imageSrc(productionShowcase)}
+              className="absolute inset-0 size-full max-w-none rounded-xl object-cover object-top"
+            />
+            <div className="pointer-events-none absolute inset-0 rounded-xl bg-white/10" />
+          </div>
+        </div>
+      </section>
+
+      <section className="flex w-full shrink-0 flex-col items-start bg-white px-5 pb-[60px] sm:px-10 lg:px-20">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col-reverse items-center gap-12 lg:flex-row lg:gap-24">
+          <div className="relative h-[280px] w-full shrink-0 overflow-hidden rounded-xl sm:h-[400px] lg:h-[440px] lg:w-[647px]">
+            <div className="absolute inset-0 rounded-xl bg-[#efeeee]" />
+            <img
+              alt=""
+              src={imageSrc(usersShowcase)}
+              className="absolute inset-0 size-full max-w-none rounded-xl object-cover object-top"
+            />
+            <div className="pointer-events-none absolute inset-0 rounded-xl bg-white/10" />
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col items-start">
+            <div className="flex w-full flex-col items-start gap-6">
+              <div className="flex w-full flex-col items-start gap-2.5">
+                <Accent label={t("home.collarBadge")} />
+                <p className="text-[28px] font-medium capitalize leading-tight text-[#08223d] sm:text-[38px] sm:leading-[50px]">
+                  {t("home.collarTitle")}
+                </p>
+                <p className="text-base leading-normal text-[#3f4f58]">
+                  {t("home.collarIntro")}
+                </p>
+              </div>
+              <div className="flex w-full flex-col items-start gap-1.5">
+                {collarFeatures.map((feature) => (
+                  <CheckItem key={feature} text={feature} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="flex w-full shrink-0 flex-col items-center px-5 py-[60px] sm:px-10 lg:px-[100px]"
+      >
+        <div className="flex w-full max-w-[1054px] flex-col items-center gap-[60px]">
+          <div className="flex w-full max-w-[680px] flex-col items-center gap-5 text-center">
+            <Accent label={t("home.faqBadge")} />
+            <p className="text-[28px] font-medium capitalize leading-[50px] text-[#08223d] sm:text-[38px]">
+              {t("home.faqTitle")}
             </p>
-            <Index />
           </div>
-        </section>
+          <div className="flex w-full flex-col items-center gap-4">
+            {faqItems.map((item, i) => {
+              const open = openFaq === i;
+              return (
+                <button
+                  key={item.q}
+                  type="button"
+                  onClick={() => setOpenFaq(open ? null : i)}
+                  className="flex w-full flex-col rounded-[20px] bg-white px-5 py-2.5 text-left"
+                  aria-expanded={open}
+                >
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <p className="min-w-0 flex-1 p-2.5 text-lg leading-normal text-[#08223d]">
+                      {item.q}
+                    </p>
+                    <img
+                      src={imageSrc(iconChevron)}
+                      alt=""
+                      className={`size-6 shrink-0 transition-transform ${
+                        open ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                  {open && (
+                    <p className="px-2.5 pb-3 text-base leading-normal text-[#3f4f58]">
+                      {item.a}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
-        <Footer />
-      </div>
+      <section
+        id="contact"
+        className="flex w-full shrink-0 flex-col items-center bg-white px-5 pt-[60px] sm:px-10 lg:px-20"
+      >
+        <div className="w-full max-w-[1280px]">
+          <ContactSection />
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

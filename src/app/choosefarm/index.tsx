@@ -10,7 +10,7 @@ import IconSolana from '@/components/Icon/IconSolana';
 import { setFarmId } from '@/utils/farmId';
 import { isFarmAdmin, isManager, isSuperAdmin } from '@/utils/permissions';
 import { filterAllFarmsForUser } from '@/utils/postLoginRouting';
-import Logo from '@/assets/logo.png';
+import Logo from '@/assets/landing/logo-nav-transparent.png';
 import { imageSrc } from '@/lib/image-src';
 import toast from 'react-hot-toast';
 
@@ -115,7 +115,7 @@ function ChooseFarm() {
     <div className="min-h-screen bg-gradient-to-b from-[#f0faf9] to-white dark:from-black dark:to-[#0a0f0f] font-outfit">
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="text-center mb-10">
-          <img src={imageSrc(Logo)} alt="DI-FARM" className="w-28 mx-auto mb-4" />
+          <img src={imageSrc(Logo)} alt="DiFarm" className="mx-auto mb-4 h-14 w-auto max-w-[200px] object-contain bg-transparent" />
           <h1 className="text-3xl font-bold text-primary">
             {isFarmAdmin(user?.role)
               ? 'Your farms'

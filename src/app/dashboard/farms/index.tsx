@@ -17,8 +17,10 @@ import { canActivateFarm, canDeleteEntity, canUpdateEntity, isFarmAdmin, isSuper
 import toast from "react-hot-toast";
 import { setFarmId } from "@/utils/farmId";
 import { MagnifyingGlassIcon, UserPlusIcon } from "@heroicons/react/24/outline";
+import { useSafeT } from "@/hooks/useSafeT";
 
 const FarmsList = () => {
+  const { t } = useSafeT();
   const navigate = useNavigate();
   const user = isLoggedIn();
   const superAdmin = isSuperAdmin(user?.role);
@@ -232,13 +234,13 @@ const FarmsList = () => {
           </button>
         </li>
         <li className="before:content-['/'] before:px-1.5">
-          <span className="text-black dark:text-white-light">Farms</span>
+          <span className="text-black dark:text-white-light">{t("pages.farms")}</span>
         </li>
       </ol>
 
       <div className="flex flex-wrap items-end justify-between gap-4 mb-4 mt-2">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Farms
+          {t("pages.farms")}
         </h1>
         {canCreateFarm && (
           <button
@@ -247,7 +249,7 @@ const FarmsList = () => {
             className="btn btn-primary inline-flex items-center gap-2"
           >
             <IconPlus className="w-5 h-5" />
-            {farmAdmin ? "Register new farm" : "Create new farm"}
+            {farmAdmin ? t("pages.registerFarm") : t("pages.createFarm")}
           </button>
         )}
       </div>

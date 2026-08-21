@@ -10,6 +10,7 @@ import { isLoggedIn } from '@/hooks/api/auth';
 import { canCreateEntity, canUpdateEntity, canDeleteEntity } from '@/utils/permissions';
 import toast from 'react-hot-toast';
 import { cn } from '@/utils';
+import { useSafeT } from '@/hooks/useSafeT';
 import AddStockModal from './add_stock';
 import UpdateStockModal from './update_stock';
 import ConfirmDeleteStockModal from './delete';
@@ -83,14 +84,14 @@ type ItemsTableView = 'consumable' | 'asset';
 
 const STOCK_TYPES = ['FOOD', 'MEDICATION', 'CONSTRUCTION', 'WATER', 'FEED_ACCESSORIES', 'HYGIENE_MATERIALS'];
 
-const TABS: { id: Tab; label: string; icon: typeof CubeIcon }[] = [
-  { id: 'overview', label: 'Overview', icon: ChartBarIcon },
-  { id: 'suppliers', label: 'Suppliers', icon: TruckIcon },
-  { id: 'items', label: 'Items', icon: CubeIcon },
-  { id: 'receive', label: 'Stock-In', icon: ArrowDownCircleIcon },
-  { id: 'stockout', label: 'Stock-Out', icon: ArrowUpCircleIcon },
-  { id: 'currentstock', label: 'Current Stock', icon: Square3Stack3DIcon },
-  { id: 'history', label: 'Stock History', icon: ClockIcon },
+const TABS: { id: Tab; labelKey: string; icon: typeof CubeIcon }[] = [
+  { id: 'overview', labelKey: 'pages.overview', icon: ChartBarIcon },
+  { id: 'suppliers', labelKey: 'pages.suppliers', icon: TruckIcon },
+  { id: 'items', labelKey: 'pages.items', icon: CubeIcon },
+  { id: 'receive', labelKey: 'pages.stockIn', icon: ArrowDownCircleIcon },
+  { id: 'stockout', labelKey: 'pages.stockOut', icon: ArrowUpCircleIcon },
+  { id: 'currentstock', labelKey: 'pages.currentStock', icon: Square3Stack3DIcon },
+  { id: 'history', labelKey: 'pages.stockHistory', icon: ClockIcon },
 ];
 
 function performerDisplay(tx: any) {
@@ -110,6 +111,7 @@ function StitchCard({ children, className }: { children: ReactNode; className?: 
 }
 
 export default function StockManagementPage() {
+  const { t } = useSafeT();
   const navigate = useNavigate();
   const farmId = getFarmId();
   const role = isLoggedIn()?.role ?? '';
@@ -352,9 +354,9 @@ export default function StockManagementPage() {
   if (!farmId) {
     return (
       <div className="stock-mgmt-page p-6 text-center">
-        <p className="text-linked">Select a farm first to manage stock.</p>
+        <p className="text-linked">{t('pages.selectFarmFirst')}</p>
         <button type="button" className="btn btn-primary mt-4" onClick={() => navigate('/choosefarm')}>
-          Choose farm
+          {t('pages.chooseFarm')}
         </button>
       </div>
     );
@@ -365,20 +367,20 @@ export default function StockManagementPage() {
       <div className="grid shrink-0 grid-cols-1 items-center gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-x-3">
         <p className="text-xs text-linked sm:justify-self-start">
           <button type="button" onClick={() => navigate('/account')} className="hover:text-primary">
-            Dashboard
+            {t('nav.dashboard')}
           </button>
           <span className="mx-1">•</span>
-          <span className="text-primary">Stock</span>
+          <span className="text-primary">{t('pages.stock')}</span>
         </p>
         <h1 className="text-center text-xl font-bold tracking-tight stock-text sm:justify-self-center sm:text-2xl">
-          Stock Management
+          {t('pages.stockManagement')}
         </h1>
         <div className="hidden sm:block sm:justify-self-end" aria-hidden />
       </div>
 
       <div className="flex flex-col gap-2 border-b border-gray-200 pb-1.5 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-1 overflow-x-auto pb-1">
-          {TABS.map(({ id, label, icon: Icon }) => (
+          {TABS.map(({ id, labelKey, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -389,7 +391,7 @@ export default function StockManagementPage() {
               )}
             >
               <Icon className="h-4 w-4" />
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>

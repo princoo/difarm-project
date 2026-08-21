@@ -5,6 +5,7 @@ import { ReactElement, ReactNode, Suspense, useEffect } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Toaster } from 'react-hot-toast';
+import '@/i18n';
 import '@/tailwind.css';
 import { store, IRootState } from '@/store';
 import Error500 from '@/errors/500Error';
@@ -16,6 +17,7 @@ import {
   toggleAnimation,
   toggleNavbar,
   toggleSemidark,
+  toggleLocale,
 } from '@/store/themeConfigSlice';
 
 export type NextPageWithLayout<P = Record<string, unknown>, IP = P> = NextPage<P, IP> & {
@@ -38,17 +40,18 @@ function ThemeInitializer({ children }: { children: ReactNode }) {
     dispatch(toggleAnimation(localStorage.getItem('animation') || themeConfig.animation));
     dispatch(toggleNavbar(localStorage.getItem('navbar') || themeConfig.navbar));
     dispatch(toggleSemidark(localStorage.getItem('semidark') || themeConfig.semidark));
-  }, [
-    dispatch,
-    themeConfig.theme,
-    themeConfig.menu,
-    themeConfig.layout,
-    themeConfig.rtlClass,
-    themeConfig.animation,
-    themeConfig.navbar,
-    themeConfig.locale,
-    themeConfig.semidark,
-  ]);
+    // Apply saved language only after mount to avoid hydration mismatch
+    const saved =
+      localStorage.getItem('i18nextLng') ||
+      localStorage.getItem('locale') ||
+      themeConfig.locale ||
+      'en';
+    const lng = saved.slice(0, 2);
+    if (['en', 'rw', 'fr'].includes(lng)) {
+      dispatch(toggleLocale(lng));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, [dispatch]);
 
   return (
     <div

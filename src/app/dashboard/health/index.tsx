@@ -1,36 +1,37 @@
 import React, { useState, useRef, useEffect } from "react";
 import { CiMenuBurger } from "react-icons/ci";
+import { useSafeT } from "@/hooks/useSafeT";
 import { useLocation, useNavigate } from "@/lib/router-compat";
 import VaccineRecords from "../vaccine";
 import InseminationRecords from "../insemination";
 import Veterinarians from "../veterians";
 import MedicineRecords from "../medicine";
 
-// Updated tabs array with components and route params
-const tabs = [
-  { 
-    name: "Vaccination", 
-    component: <VaccineRecords />, 
-    routeParam: "vaccination" 
-  },
-  { 
-    name: "Insemination", 
-    component: <InseminationRecords />, 
-    routeParam: "insemination" 
+const tabDefs = [
+  {
+    nameKey: "health.vaccination",
+    component: <VaccineRecords />,
+    routeParam: "vaccination",
   },
   {
-    name: "Medicine",
+    nameKey: "health.insemination",
+    component: <InseminationRecords />,
+    routeParam: "insemination",
+  },
+  {
+    nameKey: "health.medicine",
     component: <MedicineRecords />,
     routeParam: "medicine",
   },
-  { 
-    name: "Veterinarian", 
-    component: <Veterinarians />, 
-    routeParam: "veterinarian" 
-  }
+  {
+    nameKey: "health.veterinarian",
+    component: <Veterinarians />,
+    routeParam: "veterinarian",
+  },
 ];
 
 export default function Health() {
+  const { t } = useSafeT();
   const location = useLocation();
   const navigate = useNavigate();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -39,6 +40,10 @@ export default function Health() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const tabs = tabDefs.map((tab) => ({
+    ...tab,
+    name: t(tab.nameKey),
+  }));
 
   // Set active tab based on URL query param when component mounts
   useEffect(() => {

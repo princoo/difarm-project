@@ -12,6 +12,7 @@ import { isLoggedIn } from '@/hooks/api/auth';
 import { getFarmId } from '@/utils/farmId';
 import formatDateToLongForm from '@/utils/DateFormattter';
 import { toast } from 'react-hot-toast';
+import { useSafeT } from '@/hooks/useSafeT';
 
 type ReportTab = 'production' | 'usage';
 
@@ -39,6 +40,7 @@ function downloadCsv(filename: string, headers: string[], rows: Array<Array<stri
 }
 
 export default function Reports() {
+  const { t } = useSafeT();
   const { getProductions, productions, loading: productionLoading }: any = useProduction();
   const { getDailySales, dailySales, loading: usageLoading }: any =
     useProductionTransaction();
@@ -190,10 +192,10 @@ export default function Reports() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-700 pb-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Reports</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{t('pages.reports')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Production & usage summary · {reportDateLabel}
-            {farmId ? '' : role === 'SUPERADMIN' ? ' · all farms' : ''}
+            {t('pages.productionReport')} & {t('pages.usageReport')} · {reportDateLabel}
+            {farmId ? '' : role === 'SUPERADMIN' ? ` · ${t('dashboard.allFarms').toLowerCase()}` : ''}
           </p>
         </div>
         <button
@@ -202,7 +204,7 @@ export default function Reports() {
           className="btn btn-primary btn-sm inline-flex items-center gap-2"
         >
           <RiDownloadLine />
-          Export CSV
+          {t('pages.exportCsv')}
         </button>
       </div>
 
@@ -217,7 +219,7 @@ export default function Reports() {
                 : 'text-gray-700 dark:text-gray-200'
             }`}
           >
-            Production report
+            {t('pages.productionReport')}
           </button>
           <button
             type="button"
@@ -228,7 +230,7 @@ export default function Reports() {
                 : 'text-gray-700 dark:text-gray-200'
             }`}
           >
-            Usage report
+            {t('pages.usageReport')}
           </button>
         </div>
 

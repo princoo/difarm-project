@@ -1,4 +1,5 @@
 import React from "react";
+import { useSafeT } from "@/hooks/useSafeT";
 
 interface ServicesCardProps {
   title: string;
@@ -11,6 +12,7 @@ const ServicesCard: React.FC<ServicesCardProps> = ({
   image,
   description,
 }) => {
+  const { t } = useSafeT();
   return (
     <div className="flex flex-col h-full p-4 sm:p-5 md:p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out w-full min-w-0">
       <img
@@ -29,7 +31,7 @@ const ServicesCard: React.FC<ServicesCardProps> = ({
           type="button"
           className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base"
         >
-          Learn More
+          {t("home.learnMore")}
         </button>
       </div>
     </div>

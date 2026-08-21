@@ -1,100 +1,83 @@
 import React, { useState } from "react";
 import emailjs from "emailjs-com";
+import { imageSrc } from "@/lib/image-src";
+import iconSparkle from "@/assets/landing/icons/sparkle.svg";
+import iconPhone from "@/assets/landing/icons/phone.svg";
+import iconEmail from "@/assets/landing/icons/email.svg";
+import iconMap from "@/assets/landing/icons/map.svg";
+import { useSafeT } from "@/hooks/useSafeT";
 
-function Index() {
+export default function ContactSection() {
+  const { t } = useSafeT();
+
   return (
-    <div className="container mx-auto my-0 max-w-6xl">
-      <div className="flex flex-col lg:flex-row overflow-hidden rounded-xl shadow-lg">
-        <div className="w-full lg:w-2/5 bg-green-700 py-10 sm:py-12 lg:py-16">
-          <div className="px-5 sm:px-8 xl:w-5/6 xl:px-0 mx-auto text-left">
-            <h1 className="text-xl sm:text-2xl pb-3 sm:pb-4 text-white font-bold">
-              Get in touch
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg text-white pb-5 sm:pb-6 leading-relaxed font-normal">
-              Got a question about us? Are you interested in partnering with us?
-              Have some suggestions or just want to say Hi? Just contact us. We
-              are here to assist you.
-            </p>
-            <div className="flex pb-3 items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="icon icon-tabler icon-tabler-phone-call shrink-0"
-                width={16}
-                height={16}
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="#ffffff"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" />
-                <path d="M4 4h5l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v5a1 1 0 0 1 -1 1a16 16 0 0 1 -16 -16a1 1 0 0 1 1 -1" />
-                <path d="M15 7a2 2 0 0 1 2 2" />
-                <path d="M15 3a6 6 0 0 1 6 6" />
-              </svg>
-              <p className="pl-3 sm:pl-4 text-white text-sm sm:text-base md:text-lg break-all">
-                +(250) 781 120 101
-              </p>
-            </div>
-            <div className="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="icon icon-tabler icon-tabler-mail shrink-0"
-                width={16}
-                height={16}
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="#FFFFFF"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" />
-                <rect x={3} y={5} width={18} height={14} rx={2} />
-                <polyline points="3 7 12 13 21 7" />
-              </svg>
-              <p className="pl-3 sm:pl-4 text-white text-sm sm:text-base md:text-lg break-all">
-                Info@difarm.com
-              </p>
-            </div>
-            <p className="text-sm sm:text-base md:text-lg text-white pt-5 sm:pt-6 tracking-wide">
-              Kigali, Rwanda
-              <br />
-              st-120
+    <div className="flex w-full flex-col items-start justify-between gap-10 lg:flex-row">
+      <div className="flex w-full max-w-[537px] flex-col gap-8">
+        <div className="flex flex-col gap-6">
+          <div className="inline-flex w-fit items-center justify-center gap-1.5 rounded-[40px] bg-[#376a3b] py-[5px] pl-2 pr-3.5">
+            <img src={imageSrc(iconSparkle)} alt="" className="size-6" />
+            <span className="text-sm font-medium tracking-[0.7px] text-white">
+              {t("home.contactBadge")}
+            </span>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <h2 className="font-outfit text-[28px] font-medium capitalize leading-tight text-[#08223d] sm:text-[38px] sm:leading-[50px]">
+              {t("home.contactTitle")}
+            </h2>
+            <p className="text-base leading-normal text-[#3f4f58]">
+              {t("home.contactIntro")}
             </p>
           </div>
         </div>
 
-        <div className="w-full lg:w-3/5 bg-gray-200 py-6 sm:py-8 lg:py-5 px-3 sm:px-5">
-          <ContactForm />
+        <div className="flex flex-col gap-3.5">
+          <div className="flex items-center gap-2.5">
+            <img src={imageSrc(iconPhone)} alt="" className="size-6 shrink-0" />
+            <p className="text-base text-[#3f4f58]">{t("home.contactPhone")}</p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <img src={imageSrc(iconEmail)} alt="" className="size-6 shrink-0" />
+            <p className="text-base text-[#3f4f58]">{t("home.contactEmail")}</p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <img src={imageSrc(iconMap)} alt="" className="size-6 shrink-0" />
+            <p className="text-base text-[#3f4f58]">{t("home.contactAddress")}</p>
+          </div>
         </div>
       </div>
+
+      <ContactForm />
     </div>
   );
 }
 
-export default Index;
+const fieldBase =
+  "block w-full appearance-none rounded-lg border border-[#dde4e2] bg-white px-5 py-3 text-sm text-[#08223d] shadow-none outline-none ring-0 focus:border-[#376a3b] focus:outline-none focus:ring-0";
 
 const ContactForm = () => {
+  const { t } = useSafeT();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
+    subject: "",
     message: "",
   });
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle"
+  );
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
+    setStatus("sending");
     emailjs
       .sendForm(
         "service_he2kof7",
@@ -104,85 +87,120 @@ const ContactForm = () => {
       )
       .then(
         () => {
-          alert("Email sent successfully!");
-          setFormData({ name: "", email: "", message: "" });
+          setStatus("sent");
+          setFormData({
+            name: "",
+            email: "",
+            phone: "",
+            subject: "",
+            message: "",
+          });
         },
-        (error) => {
-          console.log("Error:", error);
-          alert("Failed to send email. Please try again.");
-        }
+        () => setStatus("error")
       );
   };
 
   return (
-    <div className="bg-gray-50 p-5 sm:p-8 md:p-10 rounded-lg shadow-md max-w-lg mx-auto w-full">
-      <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 sm:mb-6 text-center text-gray-800">
-        Contact Us
-      </h1>
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-        <div>
+    <form
+      onSubmit={handleSubmit}
+      className="flex w-full max-w-[629px] flex-col gap-5"
+    >
+      <div className="relative h-[50px] w-full">
+        <input
+          type="text"
+          name="name"
+          id="contact-name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+          aria-label={t("common.name")}
+          className={`${fieldBase} absolute inset-0 h-[50px] placeholder:text-transparent`}
+          placeholder={t("common.name")}
+        />
+        {!formData.name && (
           <label
-            htmlFor="name"
-            className="block text-sm sm:text-md font-semibold text-gray-700 mb-1.5 sm:mb-2 text-left"
+            htmlFor="contact-name"
+            className="pointer-events-none absolute top-1/2 left-5 -translate-y-1/2 text-sm text-[#718087]"
           >
-            Name
+            {t("common.name")} <span className="text-[#eb5757]">*</span>
           </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-md focus:ring focus:ring-green-200 focus:outline-none text-gray-700 text-sm sm:text-base"
-            placeholder="Enter your full name"
-          />
-        </div>
-        <div>
+        )}
+      </div>
+
+      <input
+        type="email"
+        name="email"
+        value={formData.email}
+        onChange={handleChange}
+        placeholder={t("common.email")}
+        className={`${fieldBase} h-[50px] placeholder:text-[#718087]`}
+      />
+
+      <div className="relative h-[50px] w-full">
+        <input
+          type="tel"
+          name="phone"
+          id="contact-phone"
+          value={formData.phone}
+          onChange={handleChange}
+          required
+          aria-label={t("common.phone")}
+          className={`${fieldBase} absolute inset-0 h-[50px] placeholder:text-transparent`}
+          placeholder={t("common.phone")}
+        />
+        {!formData.phone && (
           <label
-            htmlFor="email"
-            className="block text-sm sm:text-md font-semibold text-gray-700 mb-1.5 sm:mb-2 text-left"
+            htmlFor="contact-phone"
+            className="pointer-events-none absolute top-1/2 left-5 -translate-y-1/2 text-sm text-[#718087]"
           >
-            Email
+            {t("common.phone")} <span className="text-[#eb5757]">*</span>
           </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-md focus:ring focus:ring-green-200 focus:outline-none text-gray-700 text-sm sm:text-base"
-            placeholder="Enter your email address"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="message"
-            className="block text-sm sm:text-md font-semibold text-gray-700 mb-1.5 sm:mb-2 text-left"
-          >
-            Message
-          </label>
-          <textarea
-            id="message"
-            name="message"
-            value={formData.message}
-            onChange={handleChange}
-            required
-            rows={4}
-            className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-md focus:ring focus:ring-green-200 focus:outline-none text-gray-700 text-sm sm:text-base"
-            placeholder="Write your message here"
-          />
-        </div>
-        <div className="text-center pt-1">
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white font-bold py-2.5 sm:py-3 px-4 rounded-lg shadow-md hover:bg-green-700 transition duration-300 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none text-sm sm:text-base"
-          >
-            Send Message
-          </button>
-        </div>
-      </form>
-    </div>
+        )}
+      </div>
+
+      <div className="relative h-[50px] w-full">
+        <select
+          name="subject"
+          value={formData.subject}
+          onChange={handleChange}
+          className={`${fieldBase} h-[50px] pr-10 text-black`}
+        >
+          <option value="">{t("common.subject")}</option>
+          <option value="Book Appointment">{t("home.subjectAppointment")}</option>
+          <option value="Register Your farm">{t("home.subjectRegister")}</option>
+          <option value="Partnership">{t("home.subjectPartnership")}</option>
+          <option value="Support">{t("home.subjectSupport")}</option>
+        </select>
+        <span className="pointer-events-none absolute top-1/2 right-5 -translate-y-1/2 text-[#718087]">
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden>
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </span>
+      </div>
+
+      <textarea
+        name="message"
+        value={formData.message}
+        onChange={handleChange}
+        required
+        placeholder={t("common.message")}
+        className={`${fieldBase} h-[135px] resize-none placeholder:text-[#718087]`}
+      />
+
+      <button
+        type="submit"
+        disabled={status === "sending"}
+        className="flex h-auto w-[203px] items-center justify-center rounded-[40px] bg-[#08223d] px-6 py-4 text-[15px] font-medium text-white disabled:opacity-70"
+      >
+        {status === "sending" ? t("common.sending") : t("common.submit")}
+      </button>
+
+      {status === "sent" && (
+        <p className="text-sm text-[#376a3b]">{t("common.sentSuccess")}</p>
+      )}
+      {status === "error" && (
+        <p className="text-sm text-red-600">{t("common.sentError")}</p>
+      )}
+    </form>
   );
 };

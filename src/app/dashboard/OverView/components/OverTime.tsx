@@ -5,6 +5,7 @@ import LineChart from "@/components/custom/LineChart";
 import ChartWrapperShimmerCard from "@/components/custom/loaders/chart-wrapper-shimmer";
 import { getReadFarmScope } from "@/utils/farmId";
 import { isLoggedIn } from "@/hooks/api/auth";
+import { useSafeT } from "@/hooks/useSafeT";
 
 interface SeasonalData {
   insemination: InseminationData;
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export default function OverTime({ farmScope }: Props) {
+  const { t } = useSafeT();
   const user = isLoggedIn();
   const resolvedScope =
     farmScope ?? getReadFarmScope(user?.role ?? undefined);
@@ -26,7 +28,7 @@ export default function OverTime({ farmScope }: Props) {
 
   useEffect(() => {
     if (!resolvedScope) {
-      setError("No farm selected.");
+      setError(t("dashboard.noFarmSelectedShort"));
       setSeasonalData(null);
       return;
     }
@@ -51,7 +53,7 @@ export default function OverTime({ farmScope }: Props) {
       } catch (err: unknown) {
         if (cancelled) return;
         const message =
-          err instanceof Error ? err.message : "Something went wrong";
+          err instanceof Error ? err.message : t("dashboard.somethingWrong");
         setError(message);
       } finally {
         if (!cancelled) setLoading(false);
@@ -62,12 +64,12 @@ export default function OverTime({ farmScope }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [value, resolvedScope]);
+  }, [value, resolvedScope, t]);
 
   if (!resolvedScope) {
     return (
       <p className="mt-5 text-gray-600 dark:text-gray-400">
-        No farm selected. Choose a farm to view health and breeding charts.
+        {t("dashboard.noFarmSelected")}
       </p>
     );
   }
@@ -76,7 +78,7 @@ export default function OverTime({ farmScope }: Props) {
     <div className="mt-5 p-2">
       <div className="flex justify-between items-center gap-4 flex-wrap">
         <h1 className="text-lg dark:text-white font-medium">
-          Health & Breeding Records
+          {t("dashboard.healthBreeding")}
         </h1>
         <div className="w-36">
           <DateSelector
@@ -99,7 +101,7 @@ export default function OverTime({ farmScope }: Props) {
           <div className="flex flex-col gap-5">
             <LineChart
               data={seasonalData?.insemination.monthlyData || []}
-              title="Insemination Records"
+              title={t("dashboard.inseminationRecords")}
               dataKey="count"
               lineColor="#3b82f6"
               height={400}
@@ -109,7 +111,7 @@ export default function OverTime({ farmScope }: Props) {
             />
             <LineChart
               data={seasonalData?.vaccination.monthlyData || []}
-              title="Vaccination Records"
+              title={t("dashboard.vaccinationRecords")}
               dataKey="count"
               lineColor="#3b82f6"
               height={400}

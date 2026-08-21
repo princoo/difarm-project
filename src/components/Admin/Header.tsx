@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "@/lib/router-compat";
+import { useSafeT } from "@/hooks/useSafeT";
 import { AppDispatch, IRootState } from "@/store";
-import { toggleTheme } from "../../store/themeConfigSlice";
-import { toggleSidebar } from "@/store/themeConfigSlice";
+import { toggleTheme, toggleSidebar } from "../../store/themeConfigSlice";
 import profile from "@/assets/images/background/widgets/second.png";
+import Logo from "@/assets/landing/logo-nav-transparent.png";
 import { imageSrc } from "@/lib/image-src";
 import IconLaptop from "@/components/Icon/IconLaptop";
 import IconLogout from "@/components/Icon/IconLogout";
@@ -12,25 +13,22 @@ import IconMoon from "@/components/Icon/IconMoon";
 import IconSun from "@/components/Icon/IconSun";
 import IconUser from "@/components/Icon/IconUser";
 import Dropdown from "@/components/dropdown";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { storage } from "@/utils";
 import { isLoggedIn } from "@/hooks/api/auth";
 import { roleLabel } from "@/utils/permissions";
 import { useGetFarmById } from "@/hooks/api/farms";
 import { getFarmId, clearFarmId } from "@/utils/farmId";
-import IconCaretsDown from "../Icon/IconCaretsDown";
 import IconMenu from "../Icon/IconMenu";
 
 const Header = () => {
   const isRtl =
-    useSelector((state: IRootState) => state.themeConfig.rtlClass) === "rtl"
-      ? true
-      : false;
+    useSelector((state: IRootState) => state.themeConfig.rtlClass) === "rtl";
 
   const themeConfig = useSelector((state: IRootState) => state.themeConfig);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-
-  const [search, setSearch] = useState(false);
+  const { t } = useSafeT();
 
   const user = isLoggedIn();
 
@@ -55,12 +53,12 @@ const Header = () => {
   }, []);
 
   const farmId = getFarmId() ?? "";
-  const { farm, loading, error }: any = useGetFarmById(farmId);
+  const { farm }: any = useGetFarmById(farmId);
   const isSa = user?.role === "SUPERADMIN";
   const farmLabel = farmId
     ? farm?.data?.name
     : isSa
-      ? "All farms"
+      ? t("header.allFarms")
       : "";
   void farmScopeTick;
 
@@ -73,11 +71,11 @@ const Header = () => {
       <div className="shadow-sm">
         <div className="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-black">
           <div className="horizontal-logo flex items-center justify-between ltr:mr-2 rtl:ml-2 lg:hidden">
-            <Link to="/" className="main-logo flex shrink-0 items-center">
+            <Link to="/account" className="main-logo flex shrink-0 items-center">
               <img
-                className="inline w-8 ltr:-ml-1 rtl:-mr-1"
-                src={imageSrc(profile)}
-                alt="logo"
+                className="inline h-8 w-auto max-w-[120px] object-contain bg-transparent ltr:-ml-1 rtl:-mr-1"
+                src={imageSrc(Logo)}
+                alt="DiFarm"
               />
             </Link>
             <button
@@ -92,34 +90,27 @@ const Header = () => {
           </div>
 
           <div className="flex items-center space-x-1.5 ltr:ml-auto rtl:mr-auto rtl:space-x-reverse dark:text-[#d0d2d6] sm:flex-1 ltr:sm:ml-0 sm:rtl:mr-0 lg:space-x-2">
-            <div className="sm:ltr:mr-auto sm:rtl:ml-auto">
-              <p className="text-md">
-                Welcome to{" "}
+            <div className="sm:ltr:mr-auto sm:rtl:ml-auto min-w-0">
+              <p className="text-md truncate">
+                {t("header.welcomeTo")}{" "}
                 <span className="font-bold capitalize">{farmLabel}</span>
               </p>
             </div>
+            <LanguageSwitcher compact />
             <div>
               {themeConfig.theme === "light" ? (
                 <button
-                  className={`${
-                    themeConfig.theme === "light" &&
-                    "flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
-                  }`}
+                  className="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
                   onClick={() => {
                     dispatch(toggleTheme("dark"));
                   }}
                 >
                   <IconSun />
                 </button>
-              ) : (
-                ""
-              )}
+              ) : null}
               {themeConfig.theme === "dark" && (
                 <button
-                  className={`${
-                    themeConfig.theme === "dark" &&
-                    "flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
-                  }`}
+                  className="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
                   onClick={() => {
                     dispatch(toggleTheme("system"));
                   }}
@@ -129,10 +120,7 @@ const Header = () => {
               )}
               {themeConfig.theme === "system" && (
                 <button
-                  className={`${
-                    themeConfig.theme === "system" &&
-                    "flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
-                  }`}
+                  className="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
                   onClick={() => {
                     dispatch(toggleTheme("light"));
                   }}
@@ -182,18 +170,14 @@ const Header = () => {
                   <li>
                     <Link to={`profile`} className="dark:hover:text-white">
                       <IconUser className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-                      Profile
+                      {t("nav.profile")}
                     </Link>
                   </li>
                   <li className="border-t border-white-light dark:border-white-light/10">
-                    <button
-                      onClick={() => {
-                        Logout();
-                      }}
-                    >
+                    <button onClick={Logout}>
                       <span className="flex flex-row !py-3 text-danger ">
                         <IconLogout className="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
-                        Sign Out
+                        {t("nav.signOut")}
                       </span>
                     </button>
                   </li>

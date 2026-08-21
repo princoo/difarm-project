@@ -5,8 +5,10 @@ import SuperAdminFarmFilter from './components/SuperAdminFarmFilter';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { isSuperAdmin } from '@/utils/permissions';
 import { ALL_FARMS_SCOPE, getFarmId, getReadFarmScope } from '@/utils/farmId';
+import { useSafeT } from '@/hooks/useSafeT';
 
 export default function Overview() {
+  const { t } = useSafeT();
   const user = isLoggedIn();
   const superAdmin = isSuperAdmin(user?.role);
   const [farmScope, setFarmScope] = useState<string | null>(() =>
@@ -21,18 +23,18 @@ export default function Overview() {
 
   const scopeLabel =
     farmScope === ALL_FARMS_SCOPE || !getFarmId()
-      ? 'Showing data across all farms'
-      : 'Showing data for the selected farm';
+      ? t('dashboard.showingAllFarms')
+      : t('dashboard.showingSelectedFarm');
 
   return (
     <div>
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold dark:text-white">
-            Cattle Overview Dashboard
+            {t('dashboard.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            A clear overview of herd health and farm performance at a glance
+            {t('dashboard.subtitle')}
           </p>
           {superAdmin && (
             <p className="mt-1 text-sm text-teal-700 dark:text-teal-300">

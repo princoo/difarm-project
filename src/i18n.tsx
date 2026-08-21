@@ -1,22 +1,52 @@
 import i18n from 'i18next';
-import Backend from 'i18next-http-backend';
-import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 import themeConfig from './theme.config';
-i18n
-    // load translation using http -> see /public/locales
-    // learn more: https://github.com/i18next/i18next-http-backend
-    .use(Backend)
-    // detect user language
-    // learn more: https://github.com/i18next/i18next-browser-languageDetector
-    .use(LanguageDetector)
-    // pass the i18n instance to react-i18next.
-    .use(initReactI18next)
-    // init i18next
-    // for all options read: https://www.i18next.com/overview/configuration-options
-    .init({
-        fallbackLng: themeConfig.locale || 'en',
-        debug: false,
-        load: 'languageOnly'
-    });
+import en from '@/locales/en/translation.json';
+import rw from '@/locales/rw/translation.json';
+import fr from '@/locales/fr/translation.json';
+
+export const supportedLngs = ['en', 'rw', 'fr'] as const;
+
+const resources = {
+  en: { translation: en },
+  rw: { translation: rw },
+  fr: { translation: fr },
+};
+
+/** Read a nested key from the English catalog (SSR-safe fallback). */
+export function tEn(key: string): string {
+  const parts = key.split('.');
+  let cur: unknown = en;
+  for (const part of parts) {
+    if (cur == null || typeof cur !== 'object') return key;
+    cur = (cur as Record<string, unknown>)[part];
+  }
+  return typeof cur === 'string' ? cur : key;
+}
+
+if (!i18n.isInitialized) {
+  i18n.use(initReactI18next).init({
+    resources,
+    lng: themeConfig.locale || 'en',
+    fallbackLng: 'en',
+    supportedLngs: [...supportedLngs],
+    debug: false,
+    load: 'languageOnly',
+    ns: ['translation'],
+    defaultNS: 'translation',
+    interpolation: {
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: false,
+    },
+    initImmediate: true,
+  });
+} else {
+  // HMR: ensure resources stay attached after hot reload
+  Object.entries(resources).forEach(([lng, ns]) => {
+    i18n.addResourceBundle(lng, 'translation', ns.translation, true, true);
+  });
+}
+
 export default i18n;

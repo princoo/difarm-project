@@ -15,23 +15,10 @@ const defaultState = {
     sidebar: false,
     pageTitle: '',
     languageList: [
-        { code: 'zh', name: 'Chinese' },
-        { code: 'da', name: 'Danish' },
         { code: 'en', name: 'English' },
+        { code: 'rw', name: 'Kinyarwanda' },
         { code: 'fr', name: 'French' },
-        { code: 'de', name: 'German' },
-        { code: 'el', name: 'Greek' },
-        { code: 'hu', name: 'Hungarian' },
-        { code: 'it', name: 'Italian' },
-        { code: 'ja', name: 'Japanese' },
-        { code: 'pl', name: 'Polish' },
-        { code: 'pt', name: 'Portuguese' },
-        { code: 'ru', name: 'Russian' },
-        { code: 'es', name: 'Spanish' },
-        { code: 'sv', name: 'Swedish' },
-        { code: 'tr', name: 'Turkish' },
     ],
-    semidark: false,
 };
 
 const initialState = {
@@ -46,22 +33,9 @@ const initialState = {
     sidebar: defaultState.sidebar,
     semidark: themeConfig.semidark,
     languageList: [
-        { code: 'zh', name: 'Chinese' },
-        { code: 'da', name: 'Danish' },
         { code: 'en', name: 'English' },
+        { code: 'rw', name: 'Kinyarwanda' },
         { code: 'fr', name: 'French' },
-        { code: 'de', name: 'German' },
-        { code: 'el', name: 'Greek' },
-        { code: 'hu', name: 'Hungarian' },
-        { code: 'it', name: 'Italian' },
-        { code: 'ja', name: 'Japanese' },
-        { code: 'pl', name: 'Polish' },
-        { code: 'pt', name: 'Portuguese' },
-        { code: 'ru', name: 'Russian' },
-        { code: 'es', name: 'Spanish' },
-        { code: 'sv', name: 'Swedish' },
-        { code: 'tr', name: 'Turkish' },
-        { code: 'ae', name: 'Arabic' },
     ],
 };
 
@@ -142,6 +116,10 @@ const themeConfigSlice = createSlice({
             payload = payload || state.locale;
             i18next.changeLanguage(payload);
             state.locale = payload;
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('i18nextLng', payload);
+                localStorage.setItem('locale', payload);
+            }
         },
         toggleSidebar(state) {
             state.sidebar = !state.sidebar;

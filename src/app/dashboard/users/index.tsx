@@ -17,6 +17,7 @@ import ConfirmDeleteModal from './delete';
 import UserAvatar from './UserAvatar';
 import { useNavigate } from '@/lib/router-compat';
 import { MagnifyingGlassIcon, FunnelIcon, EnvelopeIcon, PhoneIcon, DocumentTextIcon, XMarkIcon, Squares2X2Icon, TableCellsIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { useSafeT } from '@/hooks/useSafeT';
 
 type UsersViewMode = 'cards' | 'table';
 const USERS_VIEW_KEY = 'difarm-users-view';
@@ -33,6 +34,7 @@ const LOG_ENTITY_TYPES: { value: string; label: string }[] = [
 const STATUS_OPTIONS = [{ value: '', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'pending', label: 'Pending' }];
 
 const Users = () => {
+    const { t } = useSafeT();
     const navigate = useNavigate();
     const user = isLoggedIn();
     const isSuperAdmin = user?.role === 'SUPERADMIN';
@@ -266,11 +268,11 @@ const Users = () => {
                 <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
                     <div>
                         <ol className="flex text-gray-500 font-semibold dark:text-white-dark text-sm">
-                            <li><button type="button" onClick={() => navigate('/account')} className="hover:text-gray-700 dark:hover:text-white">Dashboard</button></li>
-                            <li className="before:content-['/'] before:px-1.5"><span className="text-black dark:text-white-light">Users</span></li>
+                            <li><button type="button" onClick={() => navigate('/account')} className="hover:text-gray-700 dark:hover:text-white">{t('nav.dashboard')}</button></li>
+                            <li className="before:content-['/'] before:px-1.5"><span className="text-black dark:text-white-light">{t('pages.users')}</span></li>
                         </ol>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                            {isSuperAdmin ? 'Users' : 'My team'}
+                            {isSuperAdmin ? t('pages.users') : t('pages.myTeam')}
                         </h1>
                         {isAdmin && (
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -280,11 +282,11 @@ const Users = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <button type="button" onClick={() => setIsAddModalOpen(true)} className="btn btn-primary inline-flex items-center gap-2">
-                            <IconPlus className="w-5 h-5" /> {isSuperAdmin ? 'Add Farm Admin' : 'Add Manager'}
+                            <IconPlus className="w-5 h-5" /> {isSuperAdmin ? t('pages.addFarmAdmin') : t('pages.addManager')}
                         </button>
                         {canCreateEntity('veterinarians', user?.role ?? '') && (
                         <button type="button" onClick={() => setIsVetModalOpen(true)} className="btn btn-outline-primary inline-flex items-center gap-2">
-                            <IconPlus className="w-5 h-5" /> Add Veterinarian
+                            <IconPlus className="w-5 h-5" /> {t('pages.addVeterinarian')}
                         </button>
                         )}
                     </div>
@@ -353,7 +355,7 @@ const Users = () => {
 
                 {/* User list — cards or table */}
                 {loading && <p className="text-gray-500">Loading...</p>}
-                {!loading && list.length === 0 && <p className="text-gray-500">No users found.</p>}
+                {!loading && list.length === 0 && <p className="text-gray-500">{t('pages.noUsers')}</p>}
                 {!loading && list.length > 0 && viewMode === 'cards' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {list.map((u: any) => (

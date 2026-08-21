@@ -14,7 +14,7 @@ import {
   ChevronRightIcon,
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
-import Logo from '@/assets/logo.png';
+import Logo from '@/assets/landing/logo-nav-transparent.png';
 import { imageSrc } from '@/lib/image-src';
 import { InputField } from '@/components/input';
 import { useFetchUsers } from '@/hooks/api/auth';
@@ -276,8 +276,8 @@ export default function FarmProfileForm({
         <header className="text-center mb-8">
           <img
             src={imageSrc(Logo)}
-            alt="DI-FARM"
-            className="h-16 mx-auto mb-4"
+            alt="DiFarm"
+            className="mx-auto mb-4 h-14 w-auto max-w-[220px] object-contain bg-transparent"
           />
           <h1 className="text-2xl md:text-3xl font-bold text-primary">{title}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-lg mx-auto text-sm md:text-base">

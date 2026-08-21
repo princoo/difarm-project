@@ -29,10 +29,12 @@ import {
   deriveLactationCycle,
   lactationStageColor,
 } from "./lactationCycleLogic";
+import { useSafeT } from "@/hooks/useSafeT";
 
 type ViewMode = "card" | "table";
 
 const CattleList = () => {
+  const { t } = useSafeT();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchKey = searchParams.toString();
@@ -264,14 +266,14 @@ const CattleList = () => {
           <ol className="flex text-gray-500 font-semibold dark:text-white-dark text-sm">
             <li>
               <button type="button" onClick={() => navigate("/account")} className="hover:text-gray-700 dark:hover:text-white">
-                Dashboard
+                {t("nav.dashboard")}
               </button>
             </li>
             <li className="before:content-['/'] before:px-1.5">
-              <span className="text-black dark:text-white-light">Cattle</span>
+              <span className="text-black dark:text-white-light">{t("pages.cattle")}</span>
             </li>
           </ol>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">Cattle</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{t("pages.cattle")}</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
@@ -303,7 +305,7 @@ const CattleList = () => {
           {canCreate && (
             <button type="button" onClick={() => setIsAddModalOpen(true)} className="btn btn-primary inline-flex items-center gap-2">
               <IconPlus className="w-5 h-5" />
-              Add Cattle
+              {t("pages.addCattle")}
             </button>
           )}
         </div>
@@ -333,7 +335,7 @@ const CattleList = () => {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by tag, breed, gender, farm…"
+                placeholder={t("pages.searchCattle")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-primary"
@@ -344,7 +346,7 @@ const CattleList = () => {
           {loading && <p className="text-gray-500">Loading cattle…</p>}
           {!loading && filteredCardList.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
-              <p className="text-gray-500">No cattle found.</p>
+              <p className="text-gray-500">{t("pages.noCattle")}</p>
               {canCreate && (
                 <button type="button" className="btn btn-primary mt-4" onClick={() => setIsAddModalOpen(true)}>
                   Add your first cattle

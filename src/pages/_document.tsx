@@ -4,8 +4,9 @@ export default function Document() {
   return (
     <Html lang="en" dir="ltr" data-scroll-behavior="smooth">
       <Head>
-        <link rel="icon" href="/logo.png" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#16a34a" />
         <meta name="description" content="Digital Farm Management System" />
