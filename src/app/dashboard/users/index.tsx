@@ -18,6 +18,10 @@ import UserAvatar from './UserAvatar';
 import { useNavigate } from '@/lib/router-compat';
 import { MagnifyingGlassIcon, FunnelIcon, EnvelopeIcon, PhoneIcon, DocumentTextIcon, XMarkIcon, Squares2X2Icon, TableCellsIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { useSafeT } from '@/hooks/useSafeT';
+import { buildUsersAdminReport } from '@/app/dashboard/reports/buildUsersAdminReport';
+import { generateUsersAdminReportPdf } from '@/app/dashboard/reports/usersAdminReportPdf';
+import { generateUsersAdminReportDoc } from '@/app/dashboard/reports/usersAdminReportDoc';
+import { RiDownloadLine } from 'react-icons/ri';
 
 type UsersViewMode = 'cards' | 'table';
 const USERS_VIEW_KEY = 'difarm-users-view';
@@ -62,6 +66,7 @@ const Users = () => {
         const saved = localStorage.getItem(USERS_VIEW_KEY);
         return saved === 'table' ? 'table' : 'cards';
     });
+    const [exportingUsers, setExportingUsers] = useState(false);
 
     const setUsersViewMode = (mode: UsersViewMode) => {
         setViewMode(mode);
@@ -161,6 +166,33 @@ const Users = () => {
         return result;
     }, [rawList, searchQuery, roleFilter, statusFilter]);
     const loading = isSuperAdmin ? allLoading : isAdmin ? teamLoading : farmLoading;
+
+    const handleExportUsersReport = async (format: 'pdf' | 'doc') => {
+        if (!list.length) {
+            toast.error('No users to include in the report.');
+            return;
+        }
+        setExportingUsers(true);
+        try {
+            const report = buildUsersAdminReport({
+                users: list,
+                activityLogs: logs?.data ?? [],
+                generatedBy: user?.email || user?.phone || user?.role || 'Administrator',
+                scopeLabel: isSuperAdmin
+                    ? 'Platform users'
+                    : isAdmin
+                      ? 'My team'
+                      : 'Farm users',
+            });
+            if (format === 'pdf') await generateUsersAdminReportPdf(report);
+            else generateUsersAdminReportDoc(report);
+            toast.success(format === 'pdf' ? 'Users report (PDF) exported' : 'Users report (Word) exported');
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to export users report');
+        } finally {
+            setExportingUsers(false);
+        }
+    };
 
     const roleCounts = useMemo(() => {
         const counts: Record<string, number> = { '': rawList.length };
@@ -281,6 +313,26 @@ const Users = () => {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            disabled={exportingUsers}
+                            onClick={() => handleExportUsersReport('pdf')}
+                            className="btn btn-outline-primary inline-flex items-center gap-2"
+                            title={t('pages.exportUsersPdf')}
+                        >
+                            <RiDownloadLine className="w-4 h-4" />
+                            {exportingUsers ? t('pages.exporting') : 'PDF'}
+                        </button>
+                        <button
+                            type="button"
+                            disabled={exportingUsers}
+                            onClick={() => handleExportUsersReport('doc')}
+                            className="btn btn-outline-primary inline-flex items-center gap-2"
+                            title={t('pages.exportUsersWord')}
+                        >
+                            <RiDownloadLine className="w-4 h-4" />
+                            Word
+                        </button>
                         <button type="button" onClick={() => setIsAddModalOpen(true)} className="btn btn-primary inline-flex items-center gap-2">
                             <IconPlus className="w-5 h-5" /> {isSuperAdmin ? t('pages.addFarmAdmin') : t('pages.addManager')}
                         </button>

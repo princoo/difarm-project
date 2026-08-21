@@ -29,10 +29,12 @@ const Navbar: React.FC = () => {
   return (
     <nav
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        scrolled ? "bg-white shadow-sm" : "bg-transparent"
+        scrolled || isOpen
+          ? "bg-white shadow-sm"
+          : "bg-gradient-to-b from-white/90 to-white/40 backdrop-blur-[2px] lg:bg-transparent lg:from-transparent lg:to-transparent lg:backdrop-blur-none"
       }`}
     >
-      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 pb-4 pt-5 sm:px-10 lg:px-20">
+      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 pb-3 pt-4 sm:px-10 sm:pb-4 sm:pt-5 lg:px-20">
         <a
           href="#home"
           className="flex shrink-0 items-center gap-2.5"
@@ -41,15 +43,23 @@ const Navbar: React.FC = () => {
           <img
             src={imageSrc(logoIcon)}
             alt=""
-            className="h-11 w-auto bg-transparent object-contain sm:h-[51px]"
+            className="h-10 w-auto bg-transparent object-contain sm:h-[51px]"
           />
           <span
             className={`text-xl font-semibold tracking-tight sm:text-2xl ${
-              scrolled ? "text-[#08223d]" : "text-white"
+              scrolled || isOpen ? "text-[#08223d]" : "text-[#08223d] lg:text-white"
             }`}
           >
-            <span className={scrolled ? "text-[#08223d]" : "text-white"}>Di</span>
-            <span className={scrolled ? "text-[#376a3b]" : "text-[#9fd4a3]"}>Farm</span>
+            <span className={scrolled || isOpen ? "text-[#08223d]" : "text-[#08223d] lg:text-white"}>
+              Di
+            </span>
+            <span
+              className={
+                scrolled || isOpen ? "text-[#376a3b]" : "text-[#376a3b] lg:text-[#9fd4a3]"
+              }
+            >
+              Farm
+            </span>
           </span>
         </a>
 
@@ -93,7 +103,7 @@ const Navbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsOpen((v) => !v)}
-            className={`rounded-md p-2 ${scrolled ? "text-[#08223d]" : "text-white"}`}
+            className="rounded-md p-2 text-[#08223d]"
             aria-label={isOpen ? "Close menu" : "Open menu"}
           >
             {isOpen ? <FiX size={22} /> : <FiMenu size={22} />}

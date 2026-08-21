@@ -62,7 +62,7 @@ function SolutionCard({
   desc: string;
 }) {
   return (
-    <div className="flex w-full flex-col items-start overflow-clip rounded-[14px] border border-solid border-[#dde4e2] bg-white px-8 pb-[26px] pt-[30px]">
+    <div className="flex w-full flex-col items-start overflow-clip rounded-[14px] border border-solid border-[#dde4e2] bg-white px-5 pb-5 pt-6 sm:px-8 sm:pb-[26px] sm:pt-[30px]">
       <div className="flex w-full flex-col gap-4">
         <div className="inline-flex w-fit items-center justify-center rounded-[60px] bg-[#eaf3ea] p-2.5">
           <div className="relative size-10 overflow-clip">
@@ -141,29 +141,21 @@ function Home() {
       num: "01",
       title: t("home.step1Title"),
       desc: t("home.step1Desc"),
-      gap: "gap-[58px]",
-      tw: "w-[185px]",
     },
     {
       num: "02",
       title: t("home.step2Title"),
       desc: t("home.step2Desc"),
-      gap: "gap-10",
-      tw: "w-[200px]",
     },
     {
       num: "03",
       title: t("home.step3Title"),
       desc: t("home.step3Desc"),
-      gap: "gap-[60px]",
-      tw: "w-[185px]",
     },
     {
       num: "04",
       title: t("home.step4Title"),
       desc: t("home.step4Desc"),
-      gap: "gap-[62px]",
-      tw: "w-[185px]",
     },
   ];
 
@@ -203,52 +195,59 @@ function Home() {
 
       <section
         id="home"
-        className="relative h-[640px] w-full shrink-0 overflow-clip sm:h-[700px] lg:h-[760px]"
+        className="relative flex w-full min-h-[100svh] flex-col justify-end overflow-hidden sm:min-h-[700px] sm:justify-center lg:min-h-[760px]"
       >
         <img
           alt=""
           src={imageSrc(heroImage)}
-          className="pointer-events-none absolute inset-0 size-full max-w-none object-cover"
+          className="pointer-events-none absolute inset-0 size-full max-w-none object-cover object-[70%_center] sm:object-center"
         />
-        <div className="absolute top-[160px] left-5 flex w-[min(690px,calc(100%-2.5rem))] flex-col items-start gap-[30px] sm:left-10 sm:top-[180px] lg:left-[78px] lg:top-[220px]">
-          <div className="flex w-full flex-col items-start gap-4">
-            <h1 className="w-full text-4xl font-semibold capitalize leading-normal text-[#08223d] sm:text-5xl lg:text-[52px]">
-              {t("home.heroTitleLine1")}
-              <br />
-              {t("home.heroTitleLine2")}
-            </h1>
-            <p className="w-full text-base leading-normal text-[#3f4f58]">
-              {t("home.heroSubtitle")}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-start gap-4">
-            <a
-              href="#contact"
-              className="flex shrink-0 items-center justify-center rounded-[40px] bg-[#08223d] px-6 py-3 text-[15px] font-medium text-white"
-            >
-              {t("home.requestAppointment")}
-            </a>
-            <Link
-              to="/login"
-              className="flex shrink-0 items-center justify-center rounded-[40px] border border-solid border-[#376a3b] px-6 py-3 text-[15px] font-medium text-[#376a3b]"
-            >
-              {t("home.registerFarm")}
-            </Link>
+        {/* Soft overlays so headline + CTAs stay readable and nothing clips */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/55 via-white/25 to-[#eaf3ea]/85 sm:from-white/30 sm:via-transparent sm:to-[#eaf3ea]/70" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-white/70 via-white/35 to-transparent sm:max-w-[720px] lg:from-white/50" />
+
+        <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-start px-5 pb-10 pt-[7.5rem] sm:px-10 sm:pb-16 sm:pt-36 lg:px-20 lg:pb-24 lg:pt-40">
+          <div className="flex w-full max-w-[690px] flex-col items-start gap-6 sm:gap-[30px]">
+            <div className="flex w-full flex-col items-start gap-3 sm:gap-4">
+              <h1 className="w-full text-[1.75rem] font-semibold capitalize leading-snug text-[#08223d] sm:text-5xl sm:leading-normal lg:text-[52px]">
+                {t("home.heroTitleLine1")}
+                <br className="hidden sm:block" />
+                <span className="sm:hidden"> </span>
+                {t("home.heroTitleLine2")}
+              </h1>
+              <p className="w-full max-w-[36rem] text-sm leading-relaxed text-[#3f4f58] sm:text-base sm:leading-normal">
+                {t("home.heroSubtitle")}
+              </p>
+            </div>
+            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
+              <a
+                href="#contact"
+                className="flex w-full items-center justify-center rounded-[40px] bg-[#08223d] px-6 py-3.5 text-[15px] font-medium text-white sm:w-auto sm:py-3"
+              >
+                {t("home.requestAppointment")}
+              </a>
+              <Link
+                to="/login"
+                className="flex w-full items-center justify-center rounded-[40px] border border-solid border-[#376a3b] bg-white/80 px-6 py-3.5 text-[15px] font-medium text-[#376a3b] backdrop-blur-sm sm:w-auto sm:bg-transparent sm:py-3 sm:backdrop-blur-none"
+              >
+                {t("home.registerFarm")}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="flex w-full shrink-0 flex-col items-center bg-[#eaf3ea] px-5 py-[50px] sm:px-10 lg:px-20">
-        <div className="flex w-full max-w-[1280px] flex-col items-start justify-between gap-10 lg:flex-row lg:items-center">
-          <h2 className="shrink-0 max-w-[200px] text-[28px] font-medium capitalize leading-normal text-[#08223d]">
+      <section className="flex w-full shrink-0 flex-col items-center bg-[#eaf3ea] px-5 py-10 sm:px-10 sm:py-[50px] lg:px-20">
+        <div className="flex w-full max-w-[1280px] flex-col items-start justify-between gap-8 sm:gap-10 lg:flex-row lg:items-center">
+          <h2 className="shrink-0 max-w-none text-[24px] font-medium capitalize leading-snug text-[#08223d] sm:max-w-[200px] sm:text-[28px] sm:leading-normal">
             {t("home.statsTitle")}
           </h2>
-          <div className="flex w-full flex-col items-start gap-8 leading-normal sm:flex-row sm:gap-[31px] lg:w-auto">
+          <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-[31px] lg:w-auto">
             {stats.map((stat) => (
-              <div key={stat.label} className="flex w-full flex-col gap-3.5 sm:w-[267px]">
+              <div key={stat.label} className="flex w-full flex-col gap-2.5 leading-normal sm:gap-3.5 sm:w-[267px]">
                 <div className="flex flex-col gap-[5px] capitalize text-[#08223d]">
-                  <p className="text-[32px] font-semibold">{stat.value}</p>
-                  <p className="text-[22px] font-medium">{stat.label}</p>
+                  <p className="text-[28px] font-semibold sm:text-[32px]">{stat.value}</p>
+                  <p className="text-lg font-medium sm:text-[22px]">{stat.label}</p>
                 </div>
                 <p className="text-sm text-[#3f4f58]">{stat.desc}</p>
               </div>
@@ -304,7 +303,7 @@ function Home() {
       >
         <div className="flex w-full max-w-[680px] flex-col items-center gap-5 text-center">
           <Accent label={t("home.solutionsBadge")} />
-          <p className="text-[28px] font-medium capitalize leading-[50px] text-[#08223d] sm:text-[38px]">
+          <p className="text-[28px] font-medium capitalize leading-snug text-[#08223d] sm:text-[38px] sm:leading-[50px]">
             {t("home.solutionsTitle")}
           </p>
         </div>
@@ -351,7 +350,7 @@ function Home() {
             <div className="flex w-full flex-col items-start gap-4">
               <Accent label={t("home.processBadge")} dark />
               <div className="flex w-full flex-col items-start gap-[5px]">
-                <p className="w-full text-[28px] font-medium capitalize leading-[50px] text-[#08223d] sm:text-[38px]">
+                <p className="w-full text-[28px] font-medium capitalize leading-snug text-white sm:text-[38px] sm:leading-[50px]">
                   {t("home.processTitle")}
                 </p>
                 <p className="w-full text-base leading-normal text-white">
@@ -372,9 +371,9 @@ function Home() {
             {processSteps.map((step) => (
               <div
                 key={step.num}
-                className={`flex w-full shrink-0 flex-col items-start gap-3 rounded-xl bg-[#4d8251] px-[30px] py-5 sm:flex-row sm:items-center sm:gap-6 ${step.gap}`}
+                className="flex w-full shrink-0 flex-col items-start gap-3 rounded-xl bg-[#4d8251] px-5 py-5 sm:flex-row sm:items-center sm:gap-6 sm:px-[30px]"
               >
-                <div className={`flex shrink-0 flex-col items-start gap-[5px] ${step.tw}`}>
+                <div className="flex w-full shrink-0 flex-col items-start gap-[5px] sm:w-[200px]">
                   <p className="w-full text-xl font-semibold text-[#d99b35]">
                     {step.num}
                   </p>
@@ -462,7 +461,7 @@ function Home() {
         <div className="flex w-full max-w-[1054px] flex-col items-center gap-[60px]">
           <div className="flex w-full max-w-[680px] flex-col items-center gap-5 text-center">
             <Accent label={t("home.faqBadge")} />
-            <p className="text-[28px] font-medium capitalize leading-[50px] text-[#08223d] sm:text-[38px]">
+            <p className="text-[28px] font-medium capitalize leading-snug text-[#08223d] sm:text-[38px] sm:leading-[50px]">
               {t("home.faqTitle")}
             </p>
           </div>

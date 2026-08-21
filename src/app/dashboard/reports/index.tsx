@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+import {
+  DocumentTextIcon,
+  TableCellsIcon,
+  Squares2X2Icon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline';
 import { RiDownloadLine } from 'react-icons/ri';
-import { FiFilter } from 'react-icons/fi';
-import IconSearch from '@/components/Icon/IconSearch';
-import IconXCircle from '@/components/Icon/IconXCircle';
 import { useProduction } from '@/hooks/api/productions';
 import {
   DailySaleRow,
@@ -10,11 +15,27 @@ import {
 } from '@/hooks/api/production_transaction';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { getFarmId } from '@/utils/farmId';
-import formatDateToLongForm from '@/utils/DateFormattter';
 import { toast } from 'react-hot-toast';
 import { useSafeT } from '@/hooks/useSafeT';
+import {
+  autoGenerateMonthlyPackages,
+  type AutoMonthlyPackage,
+  type MonthlyDocMeta,
+} from './autoGenerateMonthlyDocs';
+import {
+  buildFarmAdminReportPdfBlob,
+  farmAdminReportPdfFilename,
+} from './farmAdminReportPdf';
+import {
+  buildFarmAdminReportDocBlob,
+  buildFarmAdminReportDocHtml,
+  farmAdminReportDocFilename,
+} from './farmAdminReportDoc';
+import { downloadBlob, fmtNum } from './reportBrand';
+import ReportReaderModal, { ReportReaderFormat } from './ReportReaderModal';
+import type { FarmAdminReport } from './farmAdminReport.types';
 
-type ReportTab = 'production' | 'usage';
+type ViewMode = 'list' | 'cards';
 
 function formatYmd(d: Date) {
   const y = d.getFullYear();
@@ -23,36 +44,38 @@ function formatYmd(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function downloadCsv(filename: string, headers: string[], rows: Array<Array<string | number>>) {
-  const escape = (value: string | number) => {
-    const text = String(value ?? '');
-    if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
-    return text;
-  };
-  const csv = [headers, ...rows].map((row) => row.map(escape).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
+const VIEW_KEY = 'difarm-reports-view';
 
 export default function Reports() {
   const { t } = useSafeT();
   const { getProductions, productions, loading: productionLoading }: any = useProduction();
-  const { getDailySales, dailySales, loading: usageLoading }: any =
-    useProductionTransaction();
+  const {
+    getDailySales,
+    dailySales,
+    getProductionTransactions,
+    production_transactions,
+    loading: usageLoading,
+  }: any = useProductionTransaction();
 
-  const [tab, setTab] = useState<ReportTab>('production');
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [search, setSearch] = useState('');
-  const [productFilter, setProductFilter] = useState('');
-  const [from, setFrom] = useState(() => formatYmd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
-  const [to, setTo] = useState(() => formatYmd(new Date()));
-  const [showFilters, setShowFilters] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'cards';
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'cards';
+  });
   const [farmId, setFarmId] = useState<string | null>(() => getFarmId());
   const role = isLoggedIn()?.role ?? '';
+  const user = isLoggedIn();
+
+  const [readerOpen, setReaderOpen] = useState(false);
+  const [readerLoading, setReaderLoading] = useState(false);
+  const [activeMeta, setActiveMeta] = useState<MonthlyDocMeta | null>(null);
+  const [activeReport, setActiveReport] = useState<FarmAdminReport | null>(null);
+  const [wordHtml, setWordHtml] = useState<string | null>(null);
+  const [wordBlob, setWordBlob] = useState<Blob | null>(null);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [initialFormat, setInitialFormat] = useState<ReportReaderFormat>('word');
 
   useEffect(() => {
     const syncFarm = () => setFarmId(getFarmId());
@@ -60,19 +83,37 @@ export default function Reports() {
     return () => window.removeEventListener('difarm-farm-changed', syncFarm);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
+  const range = useMemo(() => {
+    const from = `${year}-01-01`;
+    const endOfYear = new Date(year, 11, 31);
+    const today = new Date();
+    const to = year === today.getFullYear() ? formatYmd(today) : formatYmd(endOfYear);
+    return { from, to };
+  }, [year]);
+
   const load = useCallback(() => {
     getProductions({
-      pageSize: 500,
-      from: from || undefined,
-      to: to || undefined,
-      productName: productFilter || undefined,
+      pageSize: 2000,
+      from: range.from,
+      to: range.to,
     });
     getDailySales({
-      from: from || undefined,
-      to: to || undefined,
-      productType: productFilter || undefined,
+      from: range.from,
+      to: range.to,
     });
-  }, [from, to, productFilter]);
+    getProductionTransactions({
+      pageSize: 2000,
+      from: range.from,
+      to: range.to,
+      productType: 'MILK',
+    });
+  }, [range.from, range.to]);
 
   useEffect(() => {
     load();
@@ -80,380 +121,397 @@ export default function Reports() {
 
   const productionRows = productions?.data?.data ?? [];
   const usageRows: DailySaleRow[] = dailySales ?? [];
+  const transactionRows = useMemo(() => {
+    const raw =
+      production_transactions?.data?.data ??
+      production_transactions?.data ??
+      production_transactions ??
+      [];
+    return Array.isArray(raw) ? raw : [];
+  }, [production_transactions]);
 
-  const filteredProduction = useMemo(() => {
+  /**
+   * Automatic pipeline: whenever live data loads, the system aggregates
+   * each month, builds KPIs/charts/alerts, and prepares documentation packages.
+   */
+  const monthlyPackages: AutoMonthlyPackage[] = useMemo(
+    () =>
+      autoGenerateMonthlyPackages({
+        year,
+        productionRows,
+        usageRows,
+        transactionRows,
+        generatedBy: user?.email || user?.phone || user?.role || 'System (auto)',
+        defaultFarmName: 'Farm',
+      }),
+    [
+      year,
+      productionRows,
+      usageRows,
+      transactionRows,
+      user?.email,
+      user?.phone,
+      user?.role,
+    ]
+  );
+
+  const filteredPackages = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return productionRows;
-    return productionRows.filter((row: any) => {
-      const haystack = [
-        row.productName,
-        row.cattle?.tagNumber,
-        row.cattle?.breed,
-        row.farm?.name,
-        row.milkingSession,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [productionRows, search]);
-
-  const filteredUsage = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return usageRows;
-    return usageRows.filter((row) => {
-      const haystack = [row.productType, row.farmName, row.date]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [usageRows, search]);
-
-  const productionTotals = useMemo(() => {
-    const quantity = filteredProduction.reduce(
-      (sum: number, row: any) => sum + (Number(row.quantity) || 0),
-      0
+    if (!q) return monthlyPackages;
+    return monthlyPackages.filter((p) =>
+      [p.meta.label, p.meta.farmName, p.meta.id].join(' ').toLowerCase().includes(q)
     );
-    return { quantity, count: filteredProduction.length };
-  }, [filteredProduction]);
+  }, [monthlyPackages, search]);
 
-  const usageTotals = useMemo(() => {
-    return filteredUsage.reduce(
-      (acc, row) => {
-        acc.produced += Number(row.produced) || 0;
-        acc.used += Number(row.sold) || 0;
-        acc.remaining += Number(row.remaining) || 0;
-        acc.revenue += Number(row.saleValue) || 0;
-        return acc;
-      },
-      { produced: 0, used: 0, remaining: 0, revenue: 0 }
-    );
-  }, [filteredUsage]);
+  const yearOptions = useMemo(() => {
+    const current = new Date().getFullYear();
+    return [current, current - 1, current - 2];
+  }, []);
 
-  const productOptions = useMemo(() => {
-    const fromProd = productionRows.map((r: any) => String(r.productName || '').toUpperCase());
-    const fromUsage = usageRows.map((r) => String(r.productType || '').toUpperCase());
-    return [...new Set(['MILK', 'MEAT', ...fromProd, ...fromUsage].filter(Boolean))];
-  }, [productionRows, usageRows]);
+  const autoStats = useMemo(() => {
+    const withData = monthlyPackages.filter((p) => p.meta.hasData).length;
+    const charts = monthlyPackages.reduce((s, p) => s + p.meta.chartCount, 0);
+    return { withData, charts, total: monthlyPackages.length };
+  }, [monthlyPackages]);
 
-  const handleExport = () => {
-    const stamp = formatYmd(new Date());
-    if (tab === 'production') {
-      if (!filteredProduction.length) {
-        toast.error('No production rows to export.');
-        return;
+  const setView = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_KEY, mode);
+  };
+
+  const closeReader = () => {
+    setReaderOpen(false);
+    setActiveMeta(null);
+    setActiveReport(null);
+    setWordHtml(null);
+    setWordBlob(null);
+    setPdfBlob(null);
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+    }
+  };
+
+  const openPackage = async (pkg: AutoMonthlyPackage, format: ReportReaderFormat = 'word') => {
+    setActiveMeta(pkg.meta);
+    setActiveReport(pkg.report);
+    setInitialFormat(format);
+    setReaderOpen(true);
+    setReaderLoading(true);
+    setWordHtml(null);
+    setWordBlob(null);
+    setPdfBlob(null);
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+    }
+
+    try {
+      // Documentation is built from the already auto-processed report (summaries + charts)
+      const html = buildFarmAdminReportDocHtml(pkg.report);
+      const wBlob = buildFarmAdminReportDocBlob(pkg.report);
+      setWordHtml(html);
+      setWordBlob(wBlob);
+
+      const pBlob = await buildFarmAdminReportPdfBlob(pkg.report);
+      setPdfBlob(pBlob);
+      setPdfUrl(URL.createObjectURL(pBlob));
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to open report');
+      closeReader();
+    } finally {
+      setReaderLoading(false);
+    }
+  };
+
+  const quickDownload = async (
+    pkg: AutoMonthlyPackage,
+    format: ReportReaderFormat,
+    e: MouseEvent
+  ) => {
+    e.stopPropagation();
+    try {
+      if (format === 'pdf') {
+        const blob = await buildFarmAdminReportPdfBlob(pkg.report);
+        downloadBlob(farmAdminReportPdfFilename(pkg.report), blob);
+      } else {
+        const blob = buildFarmAdminReportDocBlob(pkg.report);
+        downloadBlob(farmAdminReportDocFilename(pkg.report), blob);
       }
-      downloadCsv(
-        `difarm-production-report-${stamp}.csv`,
-        ['Date', 'Product', 'Cattle', 'Session', 'Quantity', 'Unit', 'Farm'],
-        filteredProduction.map((row: any) => [
-          formatDateToLongForm(row.productionDate),
-          row.productName || '',
-          row.cattle?.tagNumber || '',
-          row.milkingSession || '',
-          Number(row.quantity) || 0,
-          row.productName === 'MILK' ? 'L' : 'kg',
-          row.farm?.name || '',
-        ])
-      );
-      toast.success('Production report exported');
-      return;
+      toast.success(`${pkg.meta.label} ${format.toUpperCase()} downloaded`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Download failed');
     }
-
-    if (!filteredUsage.length) {
-      toast.error('No usage rows to export.');
-      return;
-    }
-    downloadCsv(
-      `difarm-usage-report-${stamp}.csv`,
-      ['Date', 'Product', 'Available', 'Used', 'Remaining', 'Dairy revenue', 'Paid', 'Unpaid', 'Farm'],
-      filteredUsage.map((row) => [
-        row.date,
-        row.productType,
-        Number(row.produced) || 0,
-        Number(row.sold) || 0,
-        Number(row.remaining) || 0,
-        Number(row.saleValue) || 0,
-        Number(row.amountPaid) || 0,
-        Number(row.unpaid) || 0,
-        row.farmName || '',
-      ])
-    );
-    toast.success('Usage report exported');
   };
 
   const loading = productionLoading || usageLoading;
-  const reportDateLabel =
-    from && to ? `${from} → ${to}` : from || to || formatYmd(new Date());
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-700 pb-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{t('pages.reports')}</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {t('pages.reports')}
+          </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t('pages.productionReport')} & {t('pages.usageReport')} · {reportDateLabel}
+            {t('pages.monthlyReportsLibrary')} · {year}
             {farmId ? '' : role === 'SUPERADMIN' ? ` · ${t('dashboard.allFarms').toLowerCase()}` : ''}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleExport}
-          className="btn btn-primary btn-sm inline-flex items-center gap-2"
-        >
-          <RiDownloadLine />
-          {t('pages.exportCsv')}
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => load()}
+            disabled={loading}
+            className="btn btn-outline-primary btn-sm inline-flex items-center gap-1.5"
+            title={t('pages.refreshAutoReports')}
+          >
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {t('pages.refresh')}
+          </button>
+
+          <select
+            className="form-select w-auto text-sm"
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-white dark:bg-gray-900">
+            <button
+              type="button"
+              onClick={() => setView('list')}
+              className={`p-1.5 rounded-md ${
+                viewMode === 'list'
+                  ? 'bg-primary text-white'
+                  : 'text-gray-600 dark:text-gray-300'
+              }`}
+              title={t('pages.listView')}
+            >
+              <TableCellsIcon className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('cards')}
+              className={`p-1.5 rounded-md ${
+                viewMode === 'cards'
+                  ? 'bg-primary text-white'
+                  : 'text-gray-600 dark:text-gray-300'
+              }`}
+              title={t('pages.cardView')}
+            >
+              <Squares2X2Icon className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+        <span className="font-medium text-primary">{t('pages.autoPipeline')}</span>
+        {' · '}
+        {t('pages.autoPipelineHint', {
+          months: autoStats.withData,
+          charts: autoStats.charts,
+        })}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-white dark:bg-gray-900">
-          <button
-            type="button"
-            onClick={() => setTab('production')}
-            className={`px-3 py-1.5 text-sm rounded-md ${
-              tab === 'production'
-                ? 'bg-primary text-white'
-                : 'text-gray-700 dark:text-gray-200'
-            }`}
-          >
-            {t('pages.productionReport')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('usage')}
-            className={`px-3 py-1.5 text-sm rounded-md ${
-              tab === 'usage'
-                ? 'bg-primary text-white'
-                : 'text-gray-700 dark:text-gray-200'
-            }`}
-          >
-            {t('pages.usageReport')}
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="form-input peer ltr:pl-9 ltr:pr-9 w-52"
-              placeholder="Search..."
-            />
-            <span className="absolute inset-y-0 left-0 w-9 flex items-center justify-center text-gray-400">
-              <IconSearch className="w-4 h-4" />
-            </span>
-            {search && (
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 w-9 flex items-center justify-center text-gray-400"
-                onClick={() => setSearch('')}
-              >
-                <IconXCircle className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowFilters((v) => !v)}
-            className="btn btn-outline-primary btn-sm inline-flex items-center gap-2"
-          >
-            <FiFilter />
-            Filter
-          </button>
-        </div>
-      </div>
-
-      {showFilters && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
-          <div>
-            <label className="text-xs font-medium text-gray-500">Product</label>
-            <select
-              className="form-select mt-1"
-              value={productFilter}
-              onChange={(e) => setProductFilter(e.target.value)}
+        <div className="relative">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="form-input peer ltr:pl-9 ltr:pr-9 w-56"
+            placeholder={t('pages.searchReports')}
+          />
+          <span className="absolute inset-y-0 left-0 w-9 flex items-center justify-center text-gray-400">
+            <MagnifyingGlassIcon className="w-4 h-4" />
+          </span>
+          {search && (
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 w-9 flex items-center justify-center text-gray-400"
+              onClick={() => setSearch('')}
             >
-              <option value="">All products</option>
-              {productOptions.map((product) => (
-                <option key={product} value={product}>
-                  {product}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500">From</label>
-            <input
-              type="date"
-              className="form-input mt-1"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500">To</label>
-            <input
-              type="date"
-              className="form-input mt-1"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </div>
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          )}
         </div>
-      )}
-
-      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
-        <p>
-          {(tab === 'production' ? filteredProduction.length : filteredUsage.length).toLocaleString()}{' '}
-          results
-          {loading ? ' · loading…' : ''}
+        <p className="text-sm text-gray-500">
+          {filteredPackages.length} {t('pages.monthlyReports').toLowerCase()}
+          {loading ? ' · loading…' : ' · auto-updated'}
         </p>
       </div>
 
-      <div className="table-responsive mb-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-        {tab === 'production' ? (
+      {viewMode === 'list' ? (
+        <div className="table-responsive rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Product</th>
-                <th>Cattle</th>
-                <th>Session</th>
-                <th>Quantity</th>
-                <th>U.M.</th>
-                <th>Farm</th>
+                <th>{t('pages.reportDocument')}</th>
+                <th>{t('pages.period')}</th>
+                <th>{t('pages.records')}</th>
+                <th>{t('pages.milk')}</th>
+                <th>{t('pages.revenue')}</th>
+                <th>Charts</th>
+                <th className="text-right">{t('pages.actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProduction.length ? (
-                filteredProduction.map((row: any) => (
-                  <tr key={row.id}>
-                    <td>{formatDateToLongForm(row.productionDate)}</td>
-                    <td>{row.productName}</td>
-                    <td>{row.cattle?.tagNumber || '—'}</td>
+              {filteredPackages.length ? (
+                filteredPackages.map((pkg) => (
+                  <tr
+                    key={pkg.meta.id}
+                    className="cursor-pointer hover:bg-primary/5"
+                    onClick={() => openPackage(pkg, 'word')}
+                  >
                     <td>
-                      {row.milkingSession === 'MORNING'
-                        ? 'Morning'
-                        : row.milkingSession === 'EVENING'
-                          ? 'Evening'
-                          : '—'}
+                      <div className="flex items-center gap-2">
+                        <DocumentTextIcon className="h-5 w-5 text-primary shrink-0" />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {pkg.meta.label}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {pkg.meta.farmName}
+                            {pkg.meta.autoGenerated ? ' · Auto' : ''}
+                          </p>
+                        </div>
+                      </div>
                     </td>
+                    <td className="text-sm text-gray-600 dark:text-gray-300">
+                      {pkg.meta.from} → {pkg.meta.to}
+                    </td>
+                    <td>{pkg.meta.recordCount.toLocaleString()}</td>
+                    <td>{fmtNum(pkg.meta.milkQuantity)} L</td>
+                    <td>{fmtNum(pkg.meta.revenue, 0)} RWF</td>
                     <td>
-                      {Number(row.quantity).toLocaleString(undefined, {
-                        maximumFractionDigits: 6,
-                      })}
+                      <span className="text-xs font-medium text-primary">
+                        {pkg.meta.chartCount} charts
+                      </span>
                     </td>
-                    <td>{row.productName === 'MILK' ? 'L' : 'kg'}</td>
-                    <td>{row.farm?.name || '—'}</td>
+                    <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => openPackage(pkg, 'word')}
+                        >
+                          {t('pages.open')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm text-gray-500"
+                          title="Download PDF"
+                          onClick={(e) => quickDownload(pkg, 'pdf', e)}
+                        >
+                          <RiDownloadLine />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center text-gray-500 py-8">
-                    {loading ? 'Loading report…' : 'No production records for this period.'}
+                  <td colSpan={7} className="text-center text-gray-500 py-10">
+                    {loading ? t('pages.loadingReports') : t('pages.noMonthlyReports')}
                   </td>
-                </tr>
-              )}
-              {!!filteredProduction.length && (
-                <tr className="bg-primary/10 font-semibold">
-                  <td>Total</td>
-                  <td></td>
-                  <td></td>
-                  <td>{productionTotals.count} records</td>
-                  <td>
-                    {productionTotals.quantity.toLocaleString(undefined, {
-                      maximumFractionDigits: 6,
-                    })}
-                  </td>
-                  <td></td>
-                  <td></td>
                 </tr>
               )}
             </tbody>
           </table>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Product</th>
-                <th>Available</th>
-                <th>Used</th>
-                <th>Remaining</th>
-                <th>Dairy revenue</th>
-                <th>Paid</th>
-                <th>Unpaid</th>
-                <th>Farm</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsage.length ? (
-                filteredUsage.map((row) => (
-                  <tr key={row.id}>
-                    <td>{formatDateToLongForm(row.date)}</td>
-                    <td>{row.productType}</td>
-                    <td>
-                      {Number(row.produced).toLocaleString(undefined, {
-                        maximumFractionDigits: 6,
-                      })}
-                    </td>
-                    <td>
-                      {Number(row.sold).toLocaleString(undefined, {
-                        maximumFractionDigits: 6,
-                      })}
-                    </td>
-                    <td>
-                      {Number(row.remaining).toLocaleString(undefined, {
-                        maximumFractionDigits: 6,
-                      })}
-                    </td>
-                    <td>{Number(row.saleValue).toLocaleString()}</td>
-                    <td>{Number(row.amountPaid).toLocaleString()}</td>
-                    <td className={row.unpaid > 0 ? 'text-amber-600 font-semibold' : ''}>
-                      {Number(row.unpaid).toLocaleString()}
-                    </td>
-                    <td>{row.farmName || '—'}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={9} className="text-center text-gray-500 py-8">
-                    {loading ? 'Loading report…' : 'No usage records for this period.'}
-                  </td>
-                </tr>
-              )}
-              {!!filteredUsage.length && (
-                <tr className="bg-primary/10 font-semibold">
-                  <td>Total</td>
-                  <td></td>
-                  <td>
-                    {usageTotals.produced.toLocaleString(undefined, {
-                      maximumFractionDigits: 6,
-                    })}
-                  </td>
-                  <td>
-                    {usageTotals.used.toLocaleString(undefined, {
-                      maximumFractionDigits: 6,
-                    })}
-                  </td>
-                  <td>
-                    {usageTotals.remaining.toLocaleString(undefined, {
-                      maximumFractionDigits: 6,
-                    })}
-                  </td>
-                  <td>{usageTotals.revenue.toLocaleString()}</td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredPackages.length ? (
+            filteredPackages.map((pkg) => (
+              <button
+                key={pkg.meta.id}
+                type="button"
+                onClick={() => openPackage(pkg, 'word')}
+                className="text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm hover:shadow-md hover:border-primary/40 transition group"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-12 w-10 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition">
+                      <DocumentTextIcon className="h-6 w-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">
+                        {pkg.meta.label}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{pkg.meta.farmName}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wide text-primary bg-primary/10 px-2 py-1 rounded">
+                    Auto
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-lg bg-gray-50 dark:bg-gray-800/80 py-2 px-1">
+                    <p className="text-[10px] text-gray-500 uppercase">{t('pages.records')}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {pkg.meta.recordCount}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 dark:bg-gray-800/80 py-2 px-1">
+                    <p className="text-[10px] text-gray-500 uppercase">{t('pages.milk')}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {fmtNum(pkg.meta.milkQuantity, 1)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 dark:bg-gray-800/80 py-2 px-1">
+                    <p className="text-[10px] text-gray-500 uppercase">Charts</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {pkg.meta.chartCount}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-xs text-gray-400">
+                  {pkg.meta.from} → {pkg.meta.to} · {t('pages.clickToRead')}
+                </p>
+              </button>
+            ))
+          ) : (
+            <div className="col-span-full text-center text-gray-500 py-16 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+              {loading ? t('pages.loadingReports') : t('pages.noMonthlyReports')}
+            </div>
+          )}
+        </div>
+      )}
+
+      <ReportReaderModal
+        open={readerOpen}
+        onClose={closeReader}
+        title={activeMeta?.label || 'Monthly report'}
+        subtitle={
+          activeReport
+            ? `${activeReport.farmName} · ${activeReport.periodLabel} · Auto-generated`
+            : activeMeta
+              ? `${activeMeta.farmName} · ${activeMeta.from} → ${activeMeta.to}`
+              : undefined
+        }
+        loading={readerLoading}
+        wordHtml={wordHtml}
+        pdfUrl={pdfUrl}
+        pdfBlob={pdfBlob}
+        wordBlob={wordBlob}
+        wordFilename={
+          activeReport ? farmAdminReportDocFilename(activeReport) : 'report.doc'
+        }
+        pdfFilename={
+          activeReport ? farmAdminReportPdfFilename(activeReport) : 'report.pdf'
+        }
+        initialFormat={initialFormat}
+      />
     </div>
   );
 }
