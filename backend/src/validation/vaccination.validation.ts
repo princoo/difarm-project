@@ -1,7 +1,8 @@
 import Joi from 'joi';
 
 const vaccinationSchema = Joi.object({
-    cattleId: Joi.string().required(),
+    cattleId: Joi.string().optional(),
+    livestockId: Joi.string().optional(),
     date: Joi.date().required(),
     vaccineType: Joi.string().required(),
     diseaseName: Joi.string().trim().required(),
@@ -10,7 +11,13 @@ const vaccinationSchema = Joi.object({
     price: Joi.number().min(0).optional().allow(null, ''),
     documentUrl: Joi.string().optional().allow(null, ''),
     documentName: Joi.string().optional().allow(null, ''),
-});
+})
+    // A record belongs to a cow or to a non-cattle animal, never both.
+    .xor('cattleId', 'livestockId')
+    .messages({
+        'object.missing': 'Select the animal this vaccination is for',
+        'object.xor': 'A vaccination can reference only one animal',
+    });
 
 const validateFarm = (payload: any) => vaccinationSchema.validate(payload, { abortEarly: false });
 

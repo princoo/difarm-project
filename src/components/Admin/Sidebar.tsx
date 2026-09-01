@@ -7,6 +7,7 @@ import {
   DocumentChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { FaSwatchbook } from "react-icons/fa";
+import { GiGoat } from "react-icons/gi";
 import { useDispatch } from "react-redux";
 import { useSafeT } from "@/hooks/useSafeT";
 import { useLocation, Link } from "@/lib/router-compat";
@@ -62,6 +63,13 @@ const Sidebar = () => {
       to: "/account/cattle",
       icon: IconCow,
       current: location.pathname === "/account/cattle",
+      roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"],
+    },
+    {
+      nameKey: "nav.livestock",
+      to: "/account/livestock",
+      icon: GiGoat,
+      current: location.pathname.startsWith("/account/livestock"),
       roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"],
     },
     {

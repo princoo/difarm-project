@@ -23,6 +23,11 @@ export function setFarmId(farmId: string): void {
   }
 }
 
+/** Requires a concrete farm selection — never returns platform-wide "all". */
+export function requireSelectedFarmId(): string | null {
+  return getFarmId();
+}
+
 export function clearFarmId(): void {
   safeStorage()?.removeItem(FARM_ID_KEY);
   if (typeof window !== 'undefined') {

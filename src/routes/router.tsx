@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from '@/lib/router-compat';
 import Login from '../app/auth/login';
 import ChooseFarm from '@/app/choosefarm';
 import CattleList from '@/app/dashboard/cattles';
+import LivestockList from '@/app/dashboard/livestock';
 import FarmsList from '@/app/dashboard/farms';
 import FarmDetail from '@/app/dashboard/farms/FarmDetail';
 import EditFarmPage from '@/app/dashboard/farms/EditFarmPage';
@@ -63,6 +64,7 @@ export default function AppRoutes() {
                 <Route path='production_transactions' element={<ProductionTransactions />} />
                 <Route path='stock_transactions' element={<StockTransactionManagement />} />
                 <Route path='cattle' element={<CattleList />} />
+                <Route path='livestock' element={<LivestockList />} />
                 <Route path='health' element={<Health />} />
             </Route>
             <Route path="stock/" element={<AdminLayout />}>

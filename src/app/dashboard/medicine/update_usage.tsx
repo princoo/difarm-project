@@ -7,13 +7,24 @@ import { InputField } from '@/components/input';
 import AppSelect from '@/components/select/SelectField';
 import { useMedicines } from '@/hooks/api/medicine';
 import { useCattle } from '@/hooks/api/cattle';
+import { useLivestock } from '@/hooks/api/livestock';
+import { useSelectedFarmId } from '@/hooks/useSelectedFarmId';
+import {
+  ANIMAL_TYPE_OPTIONS,
+  ANIMAL_TYPE_VALUES,
+  animalPayloadKey,
+  animalTypeLabel,
+  animalTypeOf,
+  buildAnimalOptions,
+} from '../health/animalRef';
 
 const unitLabel = (unit?: string) =>
   unit === 'LITERS' ? 'L' : unit === 'PIECES' ? 'pcs' : 'g';
 
 const schema = z.object({
   medicineId: z.string().min(1, 'Select a medicine'),
-  cattleId: z.string().min(1, 'Select cattle'),
+  animalType: z.enum(ANIMAL_TYPE_VALUES),
+  animalId: z.string().min(1, 'Select the animal'),
   quantity: z.number().gt(0, 'Quantity must be greater than 0'),
   diseaseName: z.string().min(1, 'Disease is required'),
   date: z.string().min(1, 'Date is required'),
@@ -37,7 +48,9 @@ const UpdateMedicineUsageModal = ({
   medicinesList?: any[];
 }) => {
   const { updateUsage, loading } = useMedicines();
-  const { cattle, fetchCattle }: any = useCattle();
+  const { cattle, fetchCattleOnSelectedFarm }: any = useCattle();
+  const { allLivestock, fetchLivestockOnSelectedFarm } = useLivestock();
+  const selectedFarmId = useSelectedFarmId(isOpen);
   const {
     register,
     handleSubmit,
@@ -50,17 +63,31 @@ const UpdateMedicineUsageModal = ({
   });
 
   const selectedToolId = useWatch({ control, name: 'toolId' });
+  const recordType = animalTypeOf(usage);
+  const animalType = useWatch({ control, name: 'animalType' }) ?? recordType;
 
   useEffect(() => {
-    if (!isOpen) return;
-    fetchCattle('pageSize=500');
-  }, [isOpen, fetchCattle]);
+    if (!isOpen || !selectedFarmId) return;
+    fetchCattleOnSelectedFarm('pageSize=500');
+    fetchLivestockOnSelectedFarm();
+  }, [isOpen, selectedFarmId]);
+
+  // Switching type invalidates the previously selected tag.
+  useEffect(() => {
+    if (animalType && animalType !== recordType) {
+      setValue('animalId', '');
+    }
+  }, [animalType, recordType, setValue]);
 
   useEffect(() => {
     if (!isOpen || !usage) return;
     reset({
       medicineId: usage.medicineId || usage.medicine?.id || '',
-      cattleId: usage.cattleId || usage.cattle?.id || '',
+      animalType: recordType,
+      animalId:
+        recordType === 'CATTLE'
+          ? usage.cattleId || usage.cattle?.id || ''
+          : usage.livestockId || usage.livestock?.id || '',
       quantity: Number(usage.quantity) || 0,
       diseaseName: usage.diseaseName || '',
       date: usage.date ? String(usage.date).slice(0, 10) : '',
@@ -97,18 +124,38 @@ const UpdateMedicineUsageModal = ({
     [medicinesList]
   );
 
-  const cattleOptions = (cattle?.data?.data ?? [])
-    .filter((c: any) => c.status !== 'SOLD' && c.status !== 'PROCESSED')
-    .map((c: any) => ({
-      value: c.id,
-      label: `${c.tagNumber} (${c.breed})`,
-    }));
+  const animalOptions = buildAnimalOptions(
+    animalType,
+    cattle?.data?.data,
+    allLivestock?.data?.data
+  );
+
+  const typeDefaultValue = useMemo(
+    () => ANIMAL_TYPE_OPTIONS.find((o) => o.value === recordType),
+    [recordType]
+  );
+
+  // Only prefill the picker while the form still points at the record's type.
+  const animalDefaultValue = useMemo(() => {
+    if (animalType !== recordType) return undefined;
+    if (recordType === 'CATTLE') {
+      return usage?.cattle
+        ? { value: usage.cattle.id, label: String(usage.cattle.tagNumber) }
+        : undefined;
+    }
+    return usage?.livestock
+      ? {
+          value: usage.livestock.id,
+          label: String(usage.livestock.tagNumber),
+        }
+      : undefined;
+  }, [animalType, recordType, usage]);
 
   const onSubmit = async (data: FormValues) => {
     try {
       await updateUsage(usage.id, {
         medicineId: data.medicineId,
-        cattleId: data.cattleId,
+        [animalPayloadKey(data.animalType)]: data.animalId,
         quantity: data.quantity,
         diseaseName: data.diseaseName,
         date: data.date,
@@ -208,22 +255,26 @@ const UpdateMedicineUsageModal = ({
                     />
                   )}
                   <AppSelect
-                    label="Cattle"
-                    name="cattleId"
-                    placeholder="Select cattle"
-                    options={cattleOptions}
-                    defaultValue={
-                      usage?.cattle
-                        ? {
-                            value: usage.cattle.id,
-                            label: `${usage.cattle.tagNumber}`,
-                          }
-                        : undefined
-                    }
-                    error={errors.cattleId?.message}
+                    label="Animal type"
+                    name="animalType"
+                    placeholder="Select animal type"
+                    options={ANIMAL_TYPE_OPTIONS}
+                    defaultValue={typeDefaultValue}
+                    error={errors.animalType?.message}
                     register={register}
                     setValue={setValue}
-                    validation={{ required: 'Select cattle' }}
+                  />
+                  <AppSelect
+                    key={animalType}
+                    label={`${animalTypeLabel(animalType)} tag`}
+                    name="animalId"
+                    placeholder={`Select ${animalTypeLabel(animalType).toLowerCase()}`}
+                    options={animalOptions}
+                    defaultValue={animalDefaultValue}
+                    error={errors.animalId?.message}
+                    register={register}
+                    setValue={setValue}
+                    validation={{ required: 'Select the animal' }}
                   />
                   <InputField
                     label="Disease"

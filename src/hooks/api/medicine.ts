@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { api, queryString } from '.';
-import { getFarmId, getReadFarmScope } from '@/utils/farmId';
-import { isLoggedIn } from '@/hooks/api/auth';
+import { getFarmId, requireSelectedFarmId } from '@/utils/farmId';
 
 export const useMedicines = () => {
   const [loading, setLoading] = useState(false);
@@ -11,7 +10,7 @@ export const useMedicines = () => {
   const [usages, setUsages] = useState<any>(null);
 
   const getMedicines = async (query?: any) => {
-    const farmId = getReadFarmScope(isLoggedIn()?.role);
+    const farmId = requireSelectedFarmId();
     if (!farmId) {
       setMedicines(null);
       return;
@@ -34,7 +33,7 @@ export const useMedicines = () => {
   };
 
   const getUsages = async (query?: any) => {
-    const farmId = getReadFarmScope(isLoggedIn()?.role);
+    const farmId = requireSelectedFarmId();
     if (!farmId) {
       setUsages(null);
       return;

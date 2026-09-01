@@ -96,6 +96,7 @@ model Farm {
   owner       User?    @relation("UserFarms", fields: [ownerId], references: [id])
   managerLinks FarmManager[]
   cattle      Cattle[] @relation("FarmToCattle")
+  livestock   Livestock[] @relation("FarmToLivestock")
 
   productions Production[]
   wasteLogs   WastesLog[]
@@ -162,6 +163,55 @@ model Cattle {
 }
 
 enum CattleStatus {
+  HEALTHY
+  SICK
+  SOLD
+  PROCESSED
+  DECEASED
+}
+
+/// Non-cattle farm animals: goats, sheep, pigs, poultry, rabbits.
+/// One row per animal, so health and breeding records attach to an individual.
+model Livestock {
+  id               String            @id @default(uuid())
+  tagNumber        String
+  species          LivestockSpecies
+  breed            String?
+  gender           LivestockGender   @default(FEMALE)
+  DOB              DateTime?
+  weight           Float?
+  status           LivestockStatus   @default(HEALTHY)
+  location         String?
+  farmId           String
+  motherTag        String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  farm             Farm              @relation("FarmToLivestock", fields: [farmId], references: [id], onDelete: Cascade)
+  vaccinations     Vaccination[]
+  medicineUsages   MedicineUsage[]
+
+  @@unique([farmId, tagNumber])
+  @@index([farmId])
+  @@index([farmId, species])
+  @@index([farmId, status])
+}
+
+enum LivestockSpecies {
+  GOAT
+  SHEEP
+  PIG
+  POULTRY
+  RABBIT
+  OTHER
+}
+
+enum LivestockGender {
+  MALE
+  FEMALE
+}
+
+enum LivestockStatus {
   HEALTHY
   SICK
   SOLD
@@ -375,9 +425,12 @@ enum TransactionType {
   CONSUME
 }
 
+/// Exactly one of cattleId / livestockId is set, so a record can belong to a
+/// cow or to a non-cattle animal (goat, sheep, pig, poultry, rabbit).
 model Vaccination {
   id           String       @id @default(uuid())
-  cattleId     String
+  cattleId     String?
+  livestockId  String?
   farmId       String?       @default(uuid())
   date         DateTime     @default(now())
   /// Product / vaccine name administered
@@ -389,11 +442,13 @@ model Vaccination {
   documentName String?
   vetId        String?
   veterinarian Veterinarian? @relation(fields: [vetId], references: [id])
-  cattle          Cattle   @relation(fields: [cattleId], references: [id])
+  cattle          Cattle?   @relation(fields: [cattleId], references: [id])
+  livestock       Livestock? @relation(fields: [livestockId], references: [id])
   farm        Farm?     @relation(fields: [farmId], references: [id])
 
   @@map("vaccinations")
   @@index([cattleId])
+  @@index([livestockId])
   @@index([vetId])
   @@index([farmId])
 }
@@ -500,7 +555,9 @@ model MedicineUsage {
   toolId       String?
   /// How many tool units were used (default 1 when toolId is set)
   toolQuantity Float?
-  cattleId     String
+  /// Exactly one of cattleId / livestockId is set.
+  cattleId     String?
+  livestockId  String?
   quantity     Float
   /// Disease being treated for this use
   diseaseName  String
@@ -511,11 +568,13 @@ model MedicineUsage {
   farm         Farm     @relation(fields: [farmId], references: [id])
   medicine     Medicine @relation("UsageMedicine", fields: [medicineId], references: [id])
   tool         Medicine? @relation("UsageTool", fields: [toolId], references: [id])
-  cattle       Cattle   @relation(fields: [cattleId], references: [id])
+  cattle       Cattle?   @relation(fields: [cattleId], references: [id])
+  livestock    Livestock? @relation(fields: [livestockId], references: [id])
 
   @@map("medicine_usages")
   @@index([farmId])
   @@index([medicineId])
   @@index([toolId])
   @@index([cattleId])
+  @@index([livestockId])
 }

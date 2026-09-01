@@ -12,6 +12,7 @@ import { useSearchParams } from '@/lib/router-compat';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { canCreateEntity, canUpdateEntity } from '@/utils/permissions';
 import { resolveApiBaseURL } from '@/hooks/api';
+import { animalDetail, animalTag } from '../health/animalRef';
 
 
 const VaccineRecords = () => {
@@ -47,9 +48,13 @@ const VaccineRecords = () => {
 
     const columns: TableColumnV2<any>[] = [
         {
-            title: 'Cattle ',
+            title: 'Animal',
             accessor: 'cattle.tagNumber',
-            render: row => <p>{row?.cattle.breed}({row?.cattle.tagNumber})</p>,
+            render: row => (
+                <p>
+                    {animalDetail(row)}({animalTag(row)})
+                </p>
+            ),
         },
         {
             title: 'Date',

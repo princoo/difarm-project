@@ -28,7 +28,8 @@
     "signIn": "Injira",
     "getStarted": "Tangira",
     "bookAppointment": "Saba gahunda",
-    "signOut": "Sohoka"
+    "signOut": "Sohoka",
+    "livestock": "Andi matungo"
   },
   "header": {
     "welcomeTo": "Murakaza neza kuri",
@@ -62,7 +63,10 @@
     "email": "Imeri",
     "phone": "Numero ya telefone",
     "subject": "Ingingo",
-    "message": "Andika ubutumwa bwawe..."
+    "message": "Andika ubutumwa bwawe...",
+    "cards": "Amakarita",
+    "table": "Imbonerahamwe",
+    "all": "Byose"
   },
   "health": {
     "vaccination": "Inkingo",
@@ -171,7 +175,15 @@
     "health": "Ubuzima",
     "activityLogs": "Amateka y'ibikorwa",
     "farmProfile": "Umwirondoro w'ubuhinzi",
-    "selectFarmFirst": "Banza uhitemo ishamaba kugira ngo ucunge ububiko."
+    "selectFarmFirst": "Banza uhitemo ishamaba kugira ngo ucunge ububiko.",
+    "livestock": "Andi matungo",
+    "livestockIntro": "Andika ihene, intama, ingurube, inkoko n'inkwavu ziri ku murima.",
+    "addLivestock": "Andika itungo",
+    "searchLivestock": "Shakisha ukoresheje nimero, ubwoko, cyangwa ikiraro…",
+    "noLivestock": "Nta matungo yanditswe.",
+    "addFirstLivestock": "Andika itungo rya mbere",
+    "totalAnimals": "Amatungo yose",
+    "allStatuses": "Imiterere yose"
   },
   "home": {
     "heroTitle": "Guha abahinzi imbaraga bakoresheje ubuhinzi bwa kijyambere",

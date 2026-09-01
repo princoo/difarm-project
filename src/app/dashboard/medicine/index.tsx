@@ -20,6 +20,7 @@ import UpdateMedicineModal from './update_medicine';
 import AddMedicineUsageModal from './add_usage';
 import UpdateMedicineUsageModal from './update_usage';
 import ConfirmDeleteModal from './delete';
+import { animalDetail, animalTag } from '../health/animalRef';
 
 type MedicineSubTab = 'stock' | 'usage';
 
@@ -207,12 +208,11 @@ const MedicineRecords = () => {
       ),
     },
     {
-      title: 'Cattle',
+      title: 'Animal',
       accessor: 'cattle.tagNumber',
       render: (row) => (
         <p>
-          {row?.cattle?.tagNumber}
-          {row?.cattle?.breed ? ` (${row.cattle.breed})` : ''}
+          {animalTag(row)} ({animalDetail(row)})
         </p>
       ),
     },

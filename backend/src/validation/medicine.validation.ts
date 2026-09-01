@@ -57,7 +57,8 @@ const updateMedicineSchema = Joi.object({
 
 const createUsageSchema = Joi.object({
   medicineId: Joi.string().required(),
-  cattleId: Joi.string().required(),
+  cattleId: Joi.string().optional(),
+  livestockId: Joi.string().optional(),
   quantity: Joi.number().greater(0).required(),
   diseaseName: Joi.string().trim().min(1).required(),
   date: Joi.date().iso().required(),
@@ -68,17 +69,29 @@ const createUsageSchema = Joi.object({
     then: Joi.number().greater(0).default(1),
     otherwise: Joi.number().greater(0).allow(null).optional(),
   }),
-});
+})
+  // The treated animal is either a cow or a non-cattle animal, never both.
+  .xor("cattleId", "livestockId")
+  .messages({
+    "object.missing": "Select the animal being treated",
+    "object.xor": "A treatment can reference only one animal",
+  });
 
 const updateUsageSchema = Joi.object({
   medicineId: Joi.string(),
   cattleId: Joi.string(),
+  livestockId: Joi.string(),
   quantity: Joi.number().greater(0),
   diseaseName: Joi.string().trim().min(1),
   date: Joi.date().iso(),
   toolId: Joi.string().allow(null, "").optional(),
   toolQuantity: Joi.number().greater(0).allow(null).optional(),
-}).min(1);
+})
+  .min(1)
+  .oxor("cattleId", "livestockId")
+  .messages({
+    "object.oxor": "A treatment can reference only one animal",
+  });
 
 export default {
   createMedicineSchema,

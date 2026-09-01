@@ -7,13 +7,23 @@ import { InputField } from '@/components/input';
 import AppSelect from '@/components/select/SelectField';
 import { useMedicines } from '@/hooks/api/medicine';
 import { useCattle } from '@/hooks/api/cattle';
+import { useLivestock } from '@/hooks/api/livestock';
+import { useSelectedFarmId } from '@/hooks/useSelectedFarmId';
+import {
+  ANIMAL_TYPE_OPTIONS,
+  ANIMAL_TYPE_VALUES,
+  animalPayloadKey,
+  animalTypeLabel,
+  buildAnimalOptions,
+} from '../health/animalRef';
 
 const unitLabel = (unit?: string) =>
   unit === 'LITERS' ? 'L' : unit === 'PIECES' ? 'pcs' : 'g';
 
 const schema = z.object({
   medicineId: z.string().min(1, 'Select a medicine'),
-  cattleId: z.string().min(1, 'Select cattle'),
+  animalType: z.enum(ANIMAL_TYPE_VALUES),
+  animalId: z.string().min(1, 'Select the animal'),
   quantity: z.number().gt(0, 'Quantity must be greater than 0'),
   diseaseName: z.string().min(1, 'Disease is required'),
   date: z.string().min(1, 'Date is required'),
@@ -35,7 +45,9 @@ const AddMedicineUsageModal = ({
   medicinesList?: any[];
 }) => {
   const { createUsage, loading } = useMedicines();
-  const { cattle, fetchCattle }: any = useCattle();
+  const { cattle, fetchCattleOnSelectedFarm }: any = useCattle();
+  const { allLivestock, fetchLivestockOnSelectedFarm } = useLivestock();
+  const selectedFarmId = useSelectedFarmId(isOpen);
   const {
     register,
     handleSubmit,
@@ -47,7 +59,8 @@ const AddMedicineUsageModal = ({
     resolver: zodResolver(schema),
     defaultValues: {
       medicineId: '',
-      cattleId: '',
+      animalType: 'CATTLE',
+      animalId: '',
       quantity: undefined as unknown as number,
       diseaseName: '',
       date: new Date().toISOString().slice(0, 10),
@@ -58,6 +71,7 @@ const AddMedicineUsageModal = ({
 
   const selectedMedicineId = useWatch({ control, name: 'medicineId' });
   const selectedToolId = useWatch({ control, name: 'toolId' });
+  const animalType = useWatch({ control, name: 'animalType' }) ?? 'CATTLE';
 
   const selectedMedicine = useMemo(
     () => medicinesList.find((m) => m.id === selectedMedicineId),
@@ -69,24 +83,31 @@ const AddMedicineUsageModal = ({
   );
 
   useEffect(() => {
-    if (!isOpen) return;
-    fetchCattle('pageSize=500');
+    if (!isOpen || !selectedFarmId) return;
+    fetchCattleOnSelectedFarm('pageSize=500');
+    fetchLivestockOnSelectedFarm();
     reset({
       medicineId: '',
-      cattleId: '',
+      animalType: 'CATTLE',
+      animalId: '',
       quantity: undefined as unknown as number,
       diseaseName: '',
       date: new Date().toISOString().slice(0, 10),
       toolId: '',
       toolQuantity: 1,
     });
-  }, [isOpen, fetchCattle, reset]);
+  }, [isOpen, selectedFarmId, fetchCattleOnSelectedFarm, fetchLivestockOnSelectedFarm, reset]);
 
   useEffect(() => {
     if (selectedMedicine?.diseaseName) {
       setValue('diseaseName', selectedMedicine.diseaseName);
     }
   }, [selectedMedicine, setValue]);
+
+  // Each type has its own list — clear the tag when the type changes.
+  useEffect(() => {
+    setValue('animalId', '');
+  }, [animalType, setValue]);
 
   const medicineOptions = medicinesList
     .filter((m) => (m.itemType ?? 'MEDICINE') !== 'TOOL' && Number(m.quantity) > 0)
@@ -109,18 +130,17 @@ const AddMedicineUsageModal = ({
       })),
   ];
 
-  const cattleOptions = (cattle?.data?.data ?? [])
-    .filter((c: any) => c.status !== 'SOLD' && c.status !== 'PROCESSED')
-    .map((c: any) => ({
-      value: c.id,
-      label: `${c.tagNumber} (${c.breed})`,
-    }));
+  const animalOptions = buildAnimalOptions(
+    animalType,
+    cattle?.data?.data,
+    allLivestock?.data?.data
+  );
 
   const onSubmit = async (data: FormValues) => {
     try {
       const payload: Record<string, unknown> = {
         medicineId: data.medicineId,
-        cattleId: data.cattleId,
+        [animalPayloadKey(data.animalType)]: data.animalId,
         quantity: data.quantity,
         diseaseName: data.diseaseName,
         date: data.date,
@@ -223,14 +243,25 @@ const AddMedicineUsageModal = ({
                     </>
                   )}
                   <AppSelect
-                    label="Cattle"
-                    name="cattleId"
-                    placeholder="Select cattle"
-                    options={cattleOptions}
-                    error={errors.cattleId?.message}
+                    label="Animal type"
+                    name="animalType"
+                    placeholder="Select animal type"
+                    options={ANIMAL_TYPE_OPTIONS}
+                    defaultValue={ANIMAL_TYPE_OPTIONS[0]}
+                    error={errors.animalType?.message}
                     register={register}
                     setValue={setValue}
-                    validation={{ required: 'Select cattle' }}
+                  />
+                  <AppSelect
+                    key={animalType}
+                    label={`${animalTypeLabel(animalType)} tag`}
+                    name="animalId"
+                    placeholder={`Select ${animalTypeLabel(animalType).toLowerCase()}`}
+                    options={animalOptions}
+                    error={errors.animalId?.message}
+                    register={register}
+                    setValue={setValue}
+                    validation={{ required: 'Select the animal' }}
                   />
                   <InputField
                     label="Disease"

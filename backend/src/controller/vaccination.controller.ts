@@ -2,22 +2,30 @@ import { Request, Response } from "express";
 import ResponseHandler from '../util/responseHandler';
 import prisma from '../db/prisma';
 import { StatusCodes } from "http-status-codes";
-import { Roles, Vaccination } from "@prisma/client";
 import { paginate } from "../util/paginate";
 import { farmWhere } from "../util/farmScope";
+import { assertAnimalOnFarm, assertVetOnFarm } from "../util/farmAnimal";
 import { asNumber, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
 
 export const recordVaccination = async (req: Request, res: Response) => {
-
-    const { cattleId, date, vaccineType, diseaseName, vetId, farmId, price } = req.body;
+    const { cattleId, livestockId, date, vaccineType, diseaseName, vetId, farmId, price } = req.body;
     const uploaded = (req as any).file as Express.Multer.File | undefined;
 
+    if (!farmId) {
+        responseHandler.setError(StatusCodes.BAD_REQUEST, 'Farm is required');
+        return responseHandler.send(res);
+    }
+
     try {
+        await assertAnimalOnFarm(prisma, farmId, cattleId || null, livestockId || null);
+        await assertVetOnFarm(prisma, farmId, vetId);
+
         const newVaccination = await prisma.vaccination.create({
           data: {
-            cattleId,
+            cattleId: cattleId || null,
+            livestockId: livestockId || null,
             date: new Date(date),
             vaccineType,
             diseaseName: diseaseName ? String(diseaseName).trim() : null,
@@ -29,9 +37,10 @@ export const recordVaccination = async (req: Request, res: Response) => {
           },
         });
         responseHandler.setSuccess(StatusCodes.CREATED, 'Vaccination created successfully', newVaccination);
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
-        responseHandler.setError(StatusCodes.INTERNAL_SERVER_ERROR, 'Error creating vaccination');
+        const status = error?.status || StatusCodes.INTERNAL_SERVER_ERROR;
+        responseHandler.setError(status, error?.message || 'Error creating vaccination');
       }
     
       return responseHandler.send(res);
@@ -49,33 +58,17 @@ export const getAllVaccinations = async (req: Request, res: Response) => {
   const take = currentPageSize;
 
   try {
-    let vaccinations;
+    const where = farmWhere(farmId, user.role);
 
-    if (user.role === Roles.ADMIN || user.role === Roles.MANAGER || user.role === Roles.VETERINARIAN) {
-      vaccinations = await prisma.vaccination.findMany({
-        where: { farmId },
-        orderBy: { date: 'desc' },
-        include: { cattle: true, veterinarian: true },
-        skip,
-        take,
-      });
-    } else {
-      const where = farmWhere(farmId, user.role);
-      vaccinations = await prisma.vaccination.findMany({
-        where,
-        orderBy: { date: 'desc' },
-        include: { cattle: true,veterinarian:true },
-        skip,
-        take,
-      });
-    }
-
-    const totalCount = await prisma.vaccination.count({
-      where: (user.role === Roles.ADMIN || user.role === Roles.MANAGER || user.role === Roles.VETERINARIAN)
-        ? { farmId }
-        : farmWhere(farmId, user.role),
+    const vaccinations = await prisma.vaccination.findMany({
+      where,
+      orderBy: { date: 'desc' },
+      include: { cattle: true, livestock: true, veterinarian: true },
+      skip,
+      take,
     });
 
+    const totalCount = await prisma.vaccination.count({ where });
 
     const paginationResult = paginate(vaccinations, totalCount, currentPage, currentPageSize);
 
@@ -89,7 +82,6 @@ export const getAllVaccinations = async (req: Request, res: Response) => {
 };
 
   export const getVaccinationById = async (req: Request, res: Response) => {
-    // const { id } = req.params;
     try {
       const vaccination = req.vaccine
       if (vaccination) {
@@ -107,11 +99,23 @@ export const getAllVaccinations = async (req: Request, res: Response) => {
   
   export const updateVaccination = async (req: Request, res: Response) => {
     const vaccineId = asString(req.params.vaccineId);
-    const { cattleId, date, vaccineType, diseaseName, vetId, price } = req.body;
+    const { cattleId, livestockId, date, vaccineType, diseaseName, vetId, price } = req.body;
     const uploaded = (req as any).file as Express.Multer.File | undefined;
+    const existing = req.vaccine as { farmId?: string | null };
+    const farmId = existing?.farmId;
+
+    if (!farmId) {
+      responseHandler.setError(StatusCodes.BAD_REQUEST, 'Vaccination has no farm');
+      return responseHandler.send(res);
+    }
+
     try {
+      await assertAnimalOnFarm(prisma, farmId, cattleId || null, livestockId || null);
+      await assertVetOnFarm(prisma, farmId, vetId);
+
       const data: Record<string, unknown> = {
-        cattleId,
+        cattleId: cattleId || null,
+        livestockId: livestockId || null,
         date: new Date(date),
         vaccineType,
         diseaseName: diseaseName ? String(diseaseName).trim() : null,
@@ -129,12 +133,12 @@ export const getAllVaccinations = async (req: Request, res: Response) => {
         data,
       });
       responseHandler.setSuccess(StatusCodes.OK, 'Vaccination updated successfully', vaccination);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      responseHandler.setError(StatusCodes.INTERNAL_SERVER_ERROR, 'Error updating vaccination');
+      const status = error?.status || StatusCodes.INTERNAL_SERVER_ERROR;
+      responseHandler.setError(status, error?.message || 'Error updating vaccination');
     }
   
     return responseHandler.send(res);
   };
-  
   

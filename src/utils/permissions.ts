@@ -12,6 +12,7 @@ export type Entity =
   | 'users'
   | 'farms'
   | 'cattle'
+  | 'livestock'
   | 'production'
   | 'productionTotals'
   | 'productionTransactions'
@@ -57,6 +58,7 @@ const canCreate: Partial<Record<Entity, Role[]>> = {
   users: ['SUPERADMIN', 'ADMIN'],
   farms: ['SUPERADMIN', 'ADMIN'],
   cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  livestock: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
@@ -76,6 +78,7 @@ const canUpdate: Partial<Record<Entity, Role[]>> = {
   users: ['SUPERADMIN', 'ADMIN'],
   farms: ['SUPERADMIN', 'ADMIN'],
   cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  livestock: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN'],
   productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
@@ -94,6 +97,7 @@ const canDelete: Partial<Record<Entity, Role[]>> = {
   users: ['SUPERADMIN'],
   farms: ['SUPERADMIN', 'ADMIN'],
   cattle: ['SUPERADMIN', 'ADMIN'],
+  livestock: ['SUPERADMIN', 'ADMIN'],
   production: ['SUPERADMIN', 'ADMIN'],
   productionTotals: ['SUPERADMIN', 'ADMIN'],
   productionTransactions: ['SUPERADMIN', 'ADMIN'],
@@ -112,6 +116,7 @@ const canDelete: Partial<Record<Entity, Role[]>> = {
 const canViewExtra: Partial<Record<Entity, Role[]>> = {
   farms: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  livestock: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
@@ -139,6 +144,7 @@ const ROUTE_ROLES: { prefix: string; roles: Role[] }[] = [
   { prefix: '/account/farm-profile', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account/farms', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/cattle', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
+  { prefix: '/account/livestock', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account/production_totals', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/production_transactions', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/production', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },

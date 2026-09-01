@@ -28,7 +28,8 @@
     "signIn": "Se connecter",
     "getStarted": "Commencer",
     "bookAppointment": "Prendre rendez-vous",
-    "signOut": "Déconnexion"
+    "signOut": "Déconnexion",
+    "livestock": "Autre bétail"
   },
   "header": {
     "welcomeTo": "Bienvenue à",
@@ -62,7 +63,10 @@
     "email": "E-mail",
     "phone": "Numéro de téléphone",
     "subject": "Sujet",
-    "message": "Écrivez votre message..."
+    "message": "Écrivez votre message...",
+    "cards": "Cartes",
+    "table": "Tableau",
+    "all": "Tous"
   },
   "health": {
     "vaccination": "Vaccination",
@@ -171,7 +175,15 @@
     "health": "Santé",
     "activityLogs": "Journal d'activité",
     "farmProfile": "Profil de la ferme",
-    "selectFarmFirst": "Sélectionnez d'abord une ferme pour gérer le stock."
+    "selectFarmFirst": "Sélectionnez d'abord une ferme pour gérer le stock.",
+    "livestock": "Autre bétail",
+    "livestockIntro": "Enregistrez les chèvres, moutons, porcs, volailles et lapins de la ferme.",
+    "addLivestock": "Enregistrer un animal",
+    "searchLivestock": "Rechercher par étiquette, espèce, race, enclos…",
+    "noLivestock": "Aucun animal enregistré.",
+    "addFirstLivestock": "Enregistrer votre premier animal",
+    "totalAnimals": "Total des animaux",
+    "allStatuses": "Tous les statuts"
   },
   "home": {
     "heroTitle": "Autonomiser les agriculteurs grâce à l'agriculture numérique avancée",

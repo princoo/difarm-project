@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import ResponseHandler from "../util/responseHandler";
 import prisma from "../db/prisma";
-import { StatusCodes } from "http-status-codes";
-import { Roles } from "@prisma/client";
-import { paginate } from "../util/paginate";
+import { StatusCodes } from "http-status-codes";import { paginate } from "../util/paginate";
+import { farmWhere } from "../util/farmScope";
 import { asNumber, asString } from "../util/requestParam";
 
 const responseHandler = new ResponseHandler();
@@ -48,30 +47,15 @@ export const getAllVeterinarians = async (req: Request, res: Response) => {
   const take = currentPageSize;
 
   try {
-    let veterinarians;
+    const where = farmWhere(farmId, user.role);
 
-    if (user.role === Roles.ADMIN || user.role === Roles.MANAGER || user.role === Roles.VETERINARIAN) {
-      veterinarians = await prisma.veterinarian.findMany({
-        where: { farmId },
-        skip,
-        take,
-      });
-    } else if (user.role === Roles.SUPERADMIN) {
-      veterinarians = await prisma.veterinarian.findMany({
-        skip,
-        take,
-      });
-    } else {
-      responseHandler.setError(StatusCodes.FORBIDDEN, 'You do not have permission to view veterinarians.');
-      return responseHandler.send(res);
-    }
-
-    const totalCount = await prisma.veterinarian.count({
-      where:
-        user.role === Roles.ADMIN || user.role === Roles.MANAGER || user.role === Roles.VETERINARIAN
-          ? { farmId }
-          : {},
+    const veterinarians = await prisma.veterinarian.findMany({
+      where,
+      skip,
+      take,
     });
+
+    const totalCount = await prisma.veterinarian.count({ where });
 
     // Use the paginate utility to structure the response
     const paginationResult = paginate(veterinarians, totalCount, currentPage, currentPageSize);

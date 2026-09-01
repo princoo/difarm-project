@@ -28,7 +28,8 @@
     "signIn": "Sign in",
     "getStarted": "Get Started",
     "bookAppointment": "Book Appointment",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "livestock": "Other livestock"
   },
   "header": {
     "welcomeTo": "Welcome to",
@@ -62,7 +63,10 @@
     "email": "Email",
     "phone": "Phone number",
     "subject": "Subject",
-    "message": "Write down your message..."
+    "message": "Write down your message...",
+    "cards": "Cards",
+    "table": "Table",
+    "all": "All"
   },
   "health": {
     "vaccination": "Vaccination",
@@ -171,7 +175,15 @@
     "health": "Health",
     "activityLogs": "Activity logs",
     "farmProfile": "Farm profile",
-    "selectFarmFirst": "Select a farm first to manage stock."
+    "selectFarmFirst": "Select a farm first to manage stock.",
+    "livestock": "Other livestock",
+    "livestockIntro": "Record goats, sheep, pigs, poultry and rabbits kept on the farm.",
+    "addLivestock": "Record animal",
+    "searchLivestock": "Search by tag, species, breed, pen…",
+    "noLivestock": "No animals recorded yet.",
+    "addFirstLivestock": "Record your first animal",
+    "totalAnimals": "Total animals",
+    "allStatuses": "All statuses"
   },
   "home": {
     "heroTitle": "Empowering Farmers with Advanced Digital Farming",

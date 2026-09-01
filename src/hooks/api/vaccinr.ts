@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { api, queryString } from '.';
-import { getReadFarmScope } from '@/utils/farmId';
-import { isLoggedIn } from '@/hooks/api/auth';
+import { requireSelectedFarmId } from '@/utils/farmId';
 
 export const useVaccineRecords = () => {
     const [loading, setLoading] = useState(false);
@@ -10,9 +9,9 @@ export const useVaccineRecords = () => {
     const [vaccineRecords, setVaccineRecords] = useState([]);
 
     const getVaccineRecords = async (query?: string) => {
-        const farmId = getReadFarmScope(isLoggedIn()?.role);
+        const farmId = requireSelectedFarmId();
         if (!farmId) {
-            setError('No farm selected.');
+            setError('Select a farm to view vaccination records.');
             return;
         }
         setLoading(true);

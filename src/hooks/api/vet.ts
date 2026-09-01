@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { api, queryString } from '.';
+import { requireSelectedFarmId } from '@/utils/farmId';
 
 interface VeterinarianData {
     name: string;
@@ -12,8 +13,13 @@ export const useVeterinarians = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [veterinarians, setVeterinarians] = useState([]);
-    const farmId =  localStorage.getItem('FarmId') 
     const getVeterinarians = async (query?:string) => {
+        const farmId = requireSelectedFarmId();
+        if (!farmId) {
+            setError('Select a farm to view veterinarians.');
+            setVeterinarians([]);
+            return;
+        }
         setLoading(true);
         setError(null);
         try {

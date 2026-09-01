@@ -47,7 +47,7 @@ export default function AppSelect({
                 defaultValue={defaultValue}
                 isLoading={isLoading}
                 noOptionsMessage={() =>
-                  isLoading ? 'Loading cattle…' : 'No cattle found'
+                  isLoading ? 'Loading…' : 'No options found'
                 }
                 menuPortalTarget={
                   typeof document !== 'undefined' ? document.body : null

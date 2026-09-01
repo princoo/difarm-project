@@ -1,5 +1,6 @@
 import prisma from "../db/prisma";
 import { MedicineItemType, MedicineUnit } from "@prisma/client";
+import { assertAnimalOnFarm } from "../util/farmAnimal";
 
 type DbTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -18,6 +19,7 @@ const getUsageById = async (id: string) => {
       medicine: true,
       tool: true,
       cattle: true,
+      livestock: true,
     },
   });
 };
@@ -55,6 +57,7 @@ const listUsages = async (
         medicine: true,
         tool: true,
         cattle: true,
+        livestock: true,
         farm: { select: { id: true, name: true } },
       },
     }),
@@ -160,10 +163,12 @@ const assertToolStock = async (
   return tool;
 };
 
+
 const createUsage = async (data: {
   farmId: string;
   medicineId: string;
-  cattleId: string;
+  cattleId?: string | null;
+  livestockId?: string | null;
   quantity: number;
   diseaseName: string;
   date: Date;
@@ -197,12 +202,7 @@ const createUsage = async (data: {
       );
     }
 
-    const cattle = await tx.cattle.findUnique({ where: { id: data.cattleId } });
-    if (!cattle || cattle.farmId !== data.farmId) {
-      throw Object.assign(new Error("Cattle not found on this farm"), {
-        status: 400,
-      });
-    }
+    await assertAnimalOnFarm(tx, data.farmId, data.cattleId, data.livestockId);
 
     const toolId = data.toolId?.trim() || null;
     const toolQuantity = toolId ? Number(data.toolQuantity ?? 1) : null;
@@ -215,14 +215,15 @@ const createUsage = async (data: {
       data: {
         farmId: data.farmId,
         medicineId: data.medicineId,
-        cattleId: data.cattleId,
+        cattleId: data.cattleId || null,
+        livestockId: data.livestockId || null,
         quantity: data.quantity,
         diseaseName: data.diseaseName,
         date: data.date,
         toolId,
         toolQuantity,
       },
-      include: { medicine: true, tool: true, cattle: true },
+      include: { medicine: true, tool: true, cattle: true, livestock: true },
     });
 
     await tx.medicine.update({
@@ -252,7 +253,8 @@ const updateUsage = async (
   },
   data: Partial<{
     medicineId: string;
-    cattleId: string;
+    cattleId: string | null;
+    livestockId: string | null;
     quantity: number;
     diseaseName: string;
     date: Date;
@@ -312,15 +314,15 @@ const updateUsage = async (
       );
     }
 
-    if (data.cattleId) {
-      const cattle = await tx.cattle.findUnique({
-        where: { id: data.cattleId },
-      });
-      if (!cattle || cattle.farmId !== existing.farmId) {
-        throw Object.assign(new Error("Cattle not found on this farm"), {
-          status: 400,
-        });
-      }
+    // Reassigning the record to another animal replaces whichever side was set.
+    const animalProvided = Boolean(data.cattleId || data.livestockId);
+    if (animalProvided) {
+      await assertAnimalOnFarm(
+        tx,
+        existing.farmId,
+        data.cattleId,
+        data.livestockId
+      );
     }
 
     if (nextToolId && nextToolQty) {
@@ -331,7 +333,12 @@ const updateUsage = async (
       where: { id: usageId },
       data: {
         ...(data.medicineId ? { medicineId: data.medicineId } : {}),
-        ...(data.cattleId ? { cattleId: data.cattleId } : {}),
+        ...(animalProvided
+          ? {
+              cattleId: data.cattleId || null,
+              livestockId: data.livestockId || null,
+            }
+          : {}),
         ...(data.quantity != null ? { quantity: data.quantity } : {}),
         ...(data.diseaseName ? { diseaseName: data.diseaseName } : {}),
         ...(data.date ? { date: data.date } : {}),
@@ -339,7 +346,7 @@ const updateUsage = async (
           ? { toolId: nextToolId, toolQuantity: nextToolQty }
           : {}),
       },
-      include: { medicine: true, tool: true, cattle: true },
+      include: { medicine: true, tool: true, cattle: true, livestock: true },
     });
 
     await tx.medicine.update({

@@ -237,6 +237,7 @@ const createUsage = async (req: Request, res: Response) => {
     const {
       medicineId,
       cattleId,
+      livestockId,
       quantity,
       diseaseName,
       date,
@@ -247,7 +248,8 @@ const createUsage = async (req: Request, res: Response) => {
     const usage = await medicineService.createUsage({
       farmId,
       medicineId,
-      cattleId,
+      cattleId: cattleId || null,
+      livestockId: livestockId || null,
       quantity: Number(quantity),
       diseaseName: String(diseaseName).trim(),
       date: new Date(date),
@@ -278,6 +280,7 @@ const updateUsage = async (req: Request, res: Response) => {
     const {
       medicineId,
       cattleId,
+      livestockId,
       quantity,
       diseaseName,
       date,
@@ -296,7 +299,8 @@ const updateUsage = async (req: Request, res: Response) => {
       },
       {
         ...(medicineId ? { medicineId } : {}),
-        ...(cattleId ? { cattleId } : {}),
+        ...(cattleId ? { cattleId, livestockId: null } : {}),
+        ...(livestockId ? { livestockId, cattleId: null } : {}),
         ...(quantity != null ? { quantity: Number(quantity) } : {}),
         ...(diseaseName ? { diseaseName: String(diseaseName).trim() } : {}),
         ...(date ? { date: new Date(date) } : {}),

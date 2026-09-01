@@ -10,6 +10,42 @@ export const useCattle = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchCattleOnSelectedFarm = async (query: any = {}) => {
+    const farmId = getFarmId();
+    if (!farmId) {
+      setError("No farm selected. Choose a farm first.");
+      setCattle([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const params =
+        typeof query === "string"
+          ? `${query}${query.includes("_t=") ? "" : `${query ? "&" : ""}_t=${Date.now()}`}`
+          : queryString({
+              pageSize: 500,
+              ...query,
+              _t: Date.now(),
+            });
+      const response = await api.get(`/cattles/${farmId}?${params}`, {
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
+      setCattle(response.data);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "An error occurred while fetching cattle.";
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchCattle = async (query: any = {}) => {
     const role = isLoggedIn()?.role;
     const farmId = getReadFarmScope(role);
@@ -135,6 +171,7 @@ export const useCattle = () => {
     loading,
     error,
     fetchCattle,
+    fetchCattleOnSelectedFarm,
     fetchAllCattle,
     addCattle,
     updateCattle,

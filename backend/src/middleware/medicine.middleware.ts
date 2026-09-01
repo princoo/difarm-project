@@ -11,6 +11,14 @@ const responseHandler = new ResponseHandler();
 const validate =
   (schema: { validate: (payload: any, opts?: any) => { error?: any } }) =>
   (req: Request, res: Response, next: NextFunction) => {
+    // Blank animal ids would count as "present" and break the
+    // cattle/livestock xor rule, so treat them as omitted.
+    for (const key of ["cattleId", "livestockId"] as const) {
+      const value = req.body?.[key];
+      if (value === "" || value === null) {
+        delete req.body[key];
+      }
+    }
     const { error } = schema.validate(req.body, { abortEarly: false });
     if (error) {
       return res.status(400).json({
