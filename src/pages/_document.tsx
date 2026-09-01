@@ -1,4 +1,10 @@
 import { Html, Head, Main, NextScript } from "next/document";
+import {
+  LANDING_DESCRIPTION,
+  LANDING_OG_IMAGE,
+  LANDING_TITLE,
+  SITE_URL,
+} from "@/lib/landingSeo";
 
 export default function Document() {
   return (
@@ -9,16 +15,13 @@ export default function Document() {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#16a34a" />
-        <meta
-          name="description"
-          content="Manage your farm efficiently with DiFarm — powerful tools and analytics designed to maximize productivity."
-        />
-        <meta property="og:title" content="DiFarm" />
-        <meta
-          property="og:description"
-          content="Manage your farm efficiently with DiFarm — powerful tools and analytics designed to maximize productivity."
-        />
-        <meta property="og:image" content="/logo.png" />
+        <meta name="description" content={LANDING_DESCRIPTION} />
+        <meta property="og:title" content={LANDING_TITLE} />
+        <meta property="og:description" content={LANDING_DESCRIPTION} />
+        <meta property="og:image" content={LANDING_OG_IMAGE} />
+        <meta property="og:url" content={SITE_URL} />
+        <meta property="og:site_name" content="DiFarm" />
+        <meta property="og:type" content="website" />
         <link
           href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"

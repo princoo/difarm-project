@@ -81,7 +81,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
   return (
     <AppProvider>
       <Head>
-        <title>Digital Farming</title>
+        <title>DiFarm</title>
       </Head>
       {getLayout(<Component {...pageProps} />)}
     </AppProvider>

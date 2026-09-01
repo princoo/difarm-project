@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import LandingSeoHead from '@/components/LandingSeoHead';
 
 export default function HomeRedirect() {
   const router = useRouter();
@@ -8,5 +9,9 @@ export default function HomeRedirect() {
     router.replace('/home');
   }, [router]);
 
-  return null;
+  return (
+    <>
+      <LandingSeoHead path="/" />
+    </>
+  );
 }

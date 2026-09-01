@@ -1,3 +1,11 @@
 import Home from '@/app/home';
+import LandingSeoHead from '@/components/LandingSeoHead';
 
-export default Home;
+export default function HomePage() {
+  return (
+    <>
+      <LandingSeoHead path="/home" />
+      <Home />
+    </>
+  );
+}

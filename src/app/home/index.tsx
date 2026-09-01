@@ -202,9 +202,6 @@ function Home() {
           src={imageSrc(heroImage)}
           className="pointer-events-none absolute inset-0 size-full max-w-none object-cover object-[70%_center] sm:object-center"
         />
-        {/* Soft overlays so headline + CTAs stay readable and nothing clips */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/55 via-white/25 to-[#eaf3ea]/85 sm:from-white/30 sm:via-transparent sm:to-[#eaf3ea]/70" />
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-white/70 via-white/35 to-transparent sm:max-w-[720px] lg:from-white/50" />
 
         <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-start px-5 pb-10 pt-[7.5rem] sm:px-10 sm:pb-16 sm:pt-36 lg:px-20 lg:pb-24 lg:pt-40">
           <div className="flex w-full max-w-[690px] flex-col items-start gap-6 sm:gap-[30px]">
