@@ -3,16 +3,17 @@ import { isLoggedIn } from '@/hooks/api/auth';
 import { useSelectedFarm } from '@/hooks/useSelectedFarm';
 import { getDashboardMode, type DashboardMode } from '@/utils/dashboardMode';
 import { isSuperAdmin } from '@/utils/permissions';
+import { canAccessAgriculture } from '@/utils/agricultureAccess';
 
 /**
  * Which dashboard workspace is active.
  * - Super admin: chosen at login (livestock vs agriculture platform view)
- * - Farm users: derived from the selected farm's category
+ * - Farm users: livestock only — agriculture is SUPERADMIN preview until release
  */
 export function useEffectiveFarmCategory() {
   const user = isLoggedIn();
   const superAdmin = isSuperAdmin(user?.role);
-  const { farmCategory, isAgriculture, isLivestock, loading, farm } = useSelectedFarm();
+  const { farmCategory, loading, farm } = useSelectedFarm();
   const [dashboardMode, setDashboardMode] = useState<DashboardMode | null>(() =>
     getDashboardMode()
   );
@@ -23,7 +24,7 @@ export function useEffectiveFarmCategory() {
     return () => window.removeEventListener('difarm-dashboard-mode-changed', sync);
   }, []);
 
-  if (superAdmin) {
+  if (superAdmin && canAccessAgriculture(user?.role)) {
     const mode = dashboardMode ?? 'LIVESTOCK';
     return {
       farmCategory: mode as 'LIVESTOCK' | 'AGRICULTURE',
@@ -33,16 +34,20 @@ export function useEffectiveFarmCategory() {
       farm,
       dashboardMode: mode,
       isSuperAdminWorkspace: true,
+      agricultureLocked: false,
     };
   }
 
+  const selectedIsAg = farmCategory === 'AGRICULTURE' || farm?.farmCategory === 'AGRICULTURE';
+
   return {
-    farmCategory,
-    isAgriculture,
-    isLivestock,
+    farmCategory: 'LIVESTOCK' as const,
+    isAgriculture: false,
+    isLivestock: true,
     loading,
-    farm,
+    farm: selectedIsAg ? null : farm,
     dashboardMode: null,
     isSuperAdminWorkspace: false,
+    agricultureLocked: selectedIsAg,
   };
 }

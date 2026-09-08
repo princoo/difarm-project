@@ -1,6 +1,9 @@
 import { ReactNode } from "react";
 import { Navigate } from "@/lib/router-compat";
 import { useEffectiveFarmCategory } from "@/hooks/useEffectiveFarmCategory";
+import { isLoggedIn } from "@/hooks/api/auth";
+import { canAccessAgriculture } from "@/utils/agricultureAccess";
+import AgricultureUpcomingNotice from "@/components/AgricultureUpcomingNotice";
 
 type Props = {
   require: "LIVESTOCK" | "AGRICULTURE";
@@ -8,6 +11,7 @@ type Props = {
 };
 
 export default function FarmCategoryGuard({ require, children }: Props) {
+  const user = isLoggedIn();
   const { farmCategory, loading } = useEffectiveFarmCategory();
 
   if (loading) {
@@ -16,6 +20,10 @@ export default function FarmCategoryGuard({ require, children }: Props) {
         Loading…
       </div>
     );
+  }
+
+  if (require === "AGRICULTURE" && !canAccessAgriculture(user?.role)) {
+    return <AgricultureUpcomingNotice />;
   }
 
   if (farmCategory !== require) {

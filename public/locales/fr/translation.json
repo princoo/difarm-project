@@ -301,7 +301,10 @@
     "agricultureWorkspace": "Tableau de bord agriculture",
     "livestockWorkspaceHint": "Bétail, santé, production",
     "agricultureWorkspaceHint": "Cultures, parcelles, plantations, récoltes",
-    "switchWorkspace": "Changer de tableau de bord"
+    "switchWorkspace": "Changer de tableau de bord",
+    "agricultureUpcomingTitle": "L'agriculture arrive bientôt",
+    "agricultureUpcomingBody": "La gestion des cultures et des champs est disponible uniquement pour les super-administrateurs en aperçu. Les autres utilisateurs y auront accès lors de la publication officielle. Les fermes d'élevage restent disponibles.",
+    "agricultureUpcomingCta": "Retour à l'élevage"
   },
   "pages": {
     "cattle": "Bétail",

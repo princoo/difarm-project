@@ -301,7 +301,10 @@
     "agricultureWorkspace": "Dashboard y'ubuhinzi",
     "livestockWorkspaceHint": "Inka, amatungo, ubuzima, umusaruro",
     "agricultureWorkspaceHint": "Ibihingwa, imirima, gutera, gusarura",
-    "switchWorkspace": "Hindura dashboard"
+    "switchWorkspace": "Hindura dashboard",
+    "agricultureUpcomingTitle": "Ubuhinzi buraza vuba",
+    "agricultureUpcomingBody": "Imicungire y'ibihingwa n'imirima iboneka gusa kuri super admin mu gihe cyo kugerageza. Abandi bakoresha bazabona iyo serivisi iyo izaba yateye imbere. Amafarm y'amatungo aracyaboneka.",
+    "agricultureUpcomingCta": "Subira ku matungo"
   },
   "pages": {
     "cattle": "Inka",

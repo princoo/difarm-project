@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { isLoggedIn } from '@/hooks/api/auth';
 import useAddFarm from '@/hooks/api/farms';
 import { isFarmAdmin, isSuperAdmin } from '@/utils/permissions';
+import { canAccessAgriculture } from '@/utils/agricultureAccess';
 import { clearFarmId } from '@/utils/farmId';
 import {
   buildFarmPayload,
@@ -12,11 +13,17 @@ import {
 import { buildAgricultureFarmPayload, type AgricultureOnboardingValues } from './agricultureOnboardingSchema';
 import FarmProfileForm from './FarmProfileForm';
 import AgricultureFarmProfileForm from './AgricultureFarmProfileForm';
+import AgricultureUpcomingNotice from '@/components/AgricultureUpcomingNotice';
 
 export type FarmRegistrationCategory = 'LIVESTOCK' | 'AGRICULTURE';
 
-function resolveDefaultCategory(farmingMode?: string): FarmRegistrationCategory | null {
-  if (farmingMode === 'AGRICULTURE') return 'AGRICULTURE';
+function resolveDefaultCategory(
+  farmingMode?: string,
+  allowAgriculture?: boolean
+): FarmRegistrationCategory | null {
+  if (farmingMode === 'AGRICULTURE') {
+    return allowAgriculture ? 'AGRICULTURE' : 'LIVESTOCK';
+  }
   if (farmingMode === 'LIVESTOCK') return 'LIVESTOCK';
   return null;
 }
@@ -26,10 +33,12 @@ export default function RegisterFarmPage() {
   const user = isLoggedIn();
   const superAdmin = isSuperAdmin(user?.role);
   const farmAdmin = isFarmAdmin(user?.role);
+  const agAllowed = canAccessAgriculture(user?.role);
   const { addFarm, loading } = useAddFarm();
-  const [category, setCategory] = useState<FarmRegistrationCategory | null>(
-    () => resolveDefaultCategory(user?.farmingMode)
+  const [category, setCategory] = useState<FarmRegistrationCategory | null>(() =>
+    resolveDefaultCategory(user?.farmingMode, canAccessAgriculture(user?.role))
   );
+  const [showAgUpcoming, setShowAgUpcoming] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -47,6 +56,17 @@ export default function RegisterFarmPage() {
   }, [superAdmin, user?.farmingMode, category]);
 
   if (!user) return null;
+
+  if (
+    showAgUpcoming ||
+    (!agAllowed && user.farmingMode === 'AGRICULTURE' && category === 'AGRICULTURE')
+  ) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#f0faf9] via-white to-[#e8f5f4] font-outfit flex items-center justify-center px-4">
+        <AgricultureUpcomingNotice backTo="/choose-farm" />
+      </div>
+    );
+  }
 
   const handleLivestockSubmit = async (
     values: FarmOnboardingValues,
@@ -72,8 +92,12 @@ export default function RegisterFarmPage() {
   };
 
   const handleAgricultureSubmit = async (values: AgricultureOnboardingValues) => {
+    if (!agAllowed) {
+      setShowAgUpcoming(true);
+      return;
+    }
     try {
-      const resolvedOwnerId = superAdmin ? undefined : (user?.userId ?? user?.id);
+      const resolvedOwnerId = superAdmin ? undefined : user?.userId ?? user?.id;
       if (!superAdmin && !resolvedOwnerId) {
         toast.error('Session expired. Please log in again.');
         navigate('/login', { replace: true });
@@ -97,8 +121,7 @@ export default function RegisterFarmPage() {
     }
   };
 
-  const onBack = () =>
-    navigate(superAdmin ? '/account/farms' : '/choose-farm');
+  const onBack = () => navigate(superAdmin ? '/account/farms' : '/choose-farm');
 
   if (showCategoryPicker) {
     return (
@@ -116,15 +139,27 @@ export default function RegisterFarmPage() {
               <p className="font-semibold mt-2">Livestock farm</p>
               <p className="text-xs text-gray-500 mt-1">Cattle, goats, health & production</p>
             </button>
-            <button
-              type="button"
-              onClick={() => setCategory('AGRICULTURE')}
-              className="rounded-xl border-2 border-green-700/30 p-6 hover:border-green-700 hover:bg-green-50 transition"
-            >
-              <span className="text-3xl">🌾</span>
-              <p className="font-semibold mt-2">Agriculture farm</p>
-              <p className="text-xs text-gray-500 mt-1">Crops, fields, plantings & harvests</p>
-            </button>
+            {agAllowed ? (
+              <button
+                type="button"
+                onClick={() => setCategory('AGRICULTURE')}
+                className="rounded-xl border-2 border-green-700/30 p-6 hover:border-green-700 hover:bg-green-50 transition"
+              >
+                <span className="text-3xl">🌾</span>
+                <p className="font-semibold mt-2">Agriculture farm</p>
+                <p className="text-xs text-gray-500 mt-1">Crops, fields, plantings & harvests</p>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAgUpcoming(true)}
+                className="rounded-xl border-2 border-dashed border-gray-300 p-6 bg-gray-50 text-left hover:border-primary/40 transition"
+              >
+                <span className="text-3xl">🌾</span>
+                <p className="font-semibold mt-2">Agriculture farm</p>
+                <p className="text-xs text-amber-700 mt-1 font-medium">Upcoming feature</p>
+              </button>
+            )}
           </div>
           <button type="button" onClick={onBack} className="mt-6 text-sm text-primary hover:underline">
             Cancel
@@ -134,9 +169,10 @@ export default function RegisterFarmPage() {
     );
   }
 
-  const activeCategory = category ?? resolveDefaultCategory(user?.farmingMode) ?? 'LIVESTOCK';
+  const activeCategory =
+    category ?? resolveDefaultCategory(user?.farmingMode, agAllowed) ?? 'LIVESTOCK';
 
-  if (activeCategory === 'AGRICULTURE') {
+  if (activeCategory === 'AGRICULTURE' && agAllowed) {
     return (
       <AgricultureFarmProfileForm
         title={superAdmin ? 'Register an agriculture farm' : 'Register your agriculture farm'}

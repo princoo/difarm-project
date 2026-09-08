@@ -301,7 +301,10 @@
     "agricultureWorkspace": "Agriculture dashboard",
     "livestockWorkspaceHint": "Cattle, livestock, health, production, and waste",
     "agricultureWorkspaceHint": "Crop types, fields, plantings, harvests, and crop plan",
-    "switchWorkspace": "Switch dashboard"
+    "switchWorkspace": "Switch dashboard",
+    "agricultureUpcomingTitle": "Agriculture is coming soon",
+    "agricultureUpcomingBody": "Crop and field management is available to super admins for preview only. Other users will get access when this feature is fully released. Livestock farms remain available now.",
+    "agricultureUpcomingCta": "Back to livestock"
   },
   "pages": {
     "cattle": "Cattle",

@@ -3,9 +3,10 @@ import MetricsPage from './MetricsPage';
 import FarmbriteDashboard from '../farmbrite/FarmbriteDashboard';
 import OverTime from './components/OverTime';
 import SuperAdminFarmFilter from './components/SuperAdminFarmFilter';
+import AgricultureUpcomingNotice from '@/components/AgricultureUpcomingNotice';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { isSuperAdmin } from '@/utils/permissions';
-import { ALL_FARMS_SCOPE, getFarmId, getReadFarmScope } from '@/utils/farmId';
+import { ALL_FARMS_SCOPE, clearFarmId, getFarmId, getReadFarmScope } from '@/utils/farmId';
 import { useSafeT } from '@/hooks/useSafeT';
 import { useEffectiveFarmCategory } from '@/hooks/useEffectiveFarmCategory';
 
@@ -13,7 +14,7 @@ export default function Overview() {
   const { t } = useSafeT();
   const user = isLoggedIn();
   const superAdmin = isSuperAdmin(user?.role);
-  const { isAgriculture, isSuperAdminWorkspace } = useEffectiveFarmCategory();
+  const { isAgriculture, isSuperAdminWorkspace, agricultureLocked } = useEffectiveFarmCategory();
   const [farmScope, setFarmScope] = useState<string | null>(() =>
     getReadFarmScope(user?.role ?? undefined)
   );
@@ -23,6 +24,14 @@ export default function Overview() {
     window.addEventListener('difarm-farm-changed', sync);
     return () => window.removeEventListener('difarm-farm-changed', sync);
   }, [user?.role]);
+
+  useEffect(() => {
+    if (agricultureLocked) clearFarmId();
+  }, [agricultureLocked]);
+
+  if (agricultureLocked) {
+    return <AgricultureUpcomingNotice backTo="/choose-farm" />;
+  }
 
   const scopeLabel =
     farmScope === ALL_FARMS_SCOPE || !getFarmId()

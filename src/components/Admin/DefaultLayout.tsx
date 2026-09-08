@@ -14,12 +14,15 @@ import { toggleSidebar } from '@/store/themeConfigSlice';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { isSuperAdmin } from '@/utils/permissions';
+import { useEffectiveFarmCategory } from '@/hooks/useEffectiveFarmCategory';
+import AgricultureUpcomingNotice from '@/components/AgricultureUpcomingNotice';
 
 
 
 export default function AdminLayout({ children }: { children?: ReactNode }) {
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const dispatch = useDispatch();
+    const { agricultureLocked } = useEffectiveFarmCategory();
 
     const [showLoader, setShowLoader] = useState(true);
     const [showTopButton, setShowTopButton] = useState(false);
@@ -125,7 +128,11 @@ export default function AdminLayout({ children }: { children?: ReactNode }) {
                     {/* BEGIN CONTENT AREA */}
                     <Suspense>
                         <div className={`${themeConfig.animation} px-6 pt-3 pb-6 animate__animated`}>
-                            {children}
+                            {agricultureLocked ? (
+                              <AgricultureUpcomingNotice backTo="/choose-farm" />
+                            ) : (
+                              children
+                            )}
                         </div>
                     </Suspense>
                  

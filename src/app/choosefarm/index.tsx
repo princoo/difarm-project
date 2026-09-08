@@ -9,6 +9,7 @@ import IconUser from '@/components/Icon/IconUser';
 import IconSolana from '@/components/Icon/IconSolana';
 import { setFarmId } from '@/utils/farmId';
 import { isFarmAdmin, isManager, isSuperAdmin } from '@/utils/permissions';
+import { canAccessAgriculture } from '@/utils/agricultureAccess';
 import { filterAllFarmsForUser } from '@/utils/postLoginRouting';
 import Logo from '@/assets/landing/logo-nav-transparent.png';
 import { imageSrc } from '@/lib/image-src';
@@ -98,9 +99,15 @@ function ChooseFarm() {
     };
   }, [accountId, navigate, user?.role, user?.userId]);
 
+  const agAllowed = canAccessAgriculture(user?.role);
+
   const handleSelectFarm = (farm: Farm) => {
     if (farm.status === false) {
       toast.error('This farm is not activated yet. Super admin must activate it first.');
+      return;
+    }
+    if (farm.farmCategory === 'AGRICULTURE' && !agAllowed) {
+      toast('Agriculture farms are an upcoming feature. Livestock farms are available now.');
       return;
     }
     setSelectedFarmId(farm.id);
@@ -109,6 +116,10 @@ function ChooseFarm() {
 
   const handleContinue = () => {
     if (!selectedFarmId || !selectedIsActive) return;
+    if (selectedFarm?.farmCategory === 'AGRICULTURE' && !agAllowed) {
+      toast('Agriculture farms are an upcoming feature. Livestock farms are available now.');
+      return;
+    }
     navigate('/account/farm-profile');
   };
 
@@ -188,22 +199,27 @@ function ChooseFarm() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {farms.map((farm) => {
                 const isActive = farm.status !== false;
-                const selected = selectedFarmId === farm.id && isActive;
+                const isAgLocked =
+                  farm.farmCategory === 'AGRICULTURE' && !agAllowed;
+                const selectable = isActive && !isAgLocked;
+                const selected = selectedFarmId === farm.id && selectable;
                 return (
                   <article
                     key={farm.id}
                     role="button"
-                    tabIndex={isActive ? 0 : -1}
+                    tabIndex={selectable ? 0 : -1}
                     onClick={() => handleSelectFarm(farm)}
                     onKeyDown={(e) => {
-                      if (!isActive) return;
+                      if (!selectable) return;
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         handleSelectFarm(farm);
                       }
                     }}
                     className={`relative flex flex-col rounded-2xl border-2 bg-white dark:bg-[#111] p-6 shadow-md transition-all outline-none
-                      ${!isActive
+                      ${isAgLocked
+                        ? 'border-dashed border-gray-300 opacity-90 cursor-not-allowed'
+                        : !isActive
                         ? 'border-warning/40 opacity-90 cursor-not-allowed'
                         : selected
                           ? 'border-primary ring-2 ring-primary/30 scale-[1.02] shadow-lg cursor-pointer focus-visible:ring-2 focus-visible:ring-primary'
@@ -240,8 +256,19 @@ function ChooseFarm() {
                     <span className="mt-1 inline-flex w-fit rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-800 dark:bg-teal-900/40 dark:text-teal-200">
                       {farm.farmCategory === 'AGRICULTURE' ? '🌾 Agriculture' : '🐄 Livestock'}
                     </span>
+                    {isAgLocked && (
+                      <span className="mt-1 inline-flex w-fit rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                        Upcoming feature
+                      </span>
+                    )}
 
-                    {!isActive && (
+                    {isAgLocked && (
+                      <p className="mt-2 text-xs text-amber-700 font-medium">
+                        Agriculture tools are coming soon. Use a livestock farm for now.
+                      </p>
+                    )}
+
+                    {!isActive && !isAgLocked && (
                       <p className="mt-2 text-xs text-warning font-medium">
                         Pending super admin approval — dashboard access is disabled until activated.
                       </p>
