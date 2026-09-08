@@ -8,7 +8,6 @@ import IconPlus from "@/components/Icon/IconPlus";
 import { useSafeT } from "@/hooks/useSafeT";
 import { canCreateEntity, canDeleteEntity, canUpdateEntity } from "@/utils/permissions";
 import { isLoggedIn } from "@/hooks/api/auth";
-import { useEffectiveFarmCategory } from "@/hooks/useEffectiveFarmCategory";
 import { requireSelectedFarmId } from "@/utils/farmId";
 import {
   FarmTask,
@@ -17,8 +16,7 @@ import {
 } from "@/hooks/api/activities";
 import { useGrowFields, usePlantings } from "@/hooks/api/agriculture";
 import FarmRequiredNotice from "@/components/Admin/FarmRequiredNotice";
-import { useCattle } from "@/hooks/api/cattle";
-import { useLivestock } from "@/hooks/api/livestock";
+import FarmCategoryGuard from "@/components/auth/FarmCategoryGuard";
 import {
   CalendarDaysIcon,
   ListBulletIcon,
@@ -27,7 +25,7 @@ import {
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE", "MISSED", "SKIPPED"] as const;
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
-const CATEGORIES = ["LIVESTOCK", "CROPS", "MAINTENANCE", "ADMIN", "OTHER"] as const;
+const CATEGORIES = ["CROPS", "MAINTENANCE", "ADMIN", "OTHER"] as const;
 const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#64748b"];
 const BOARD_COLUMNS = ["TODO", "IN_PROGRESS", "DONE"] as const;
 
@@ -79,12 +77,9 @@ function statusClass(status: string) {
 export default function ActivitiesPage() {
   const { t } = useSafeT();
   const role = isLoggedIn()?.role ?? "";
-  const { isAgriculture } = useEffectiveFarmCategory();
   const { items, stats, loading, fetchAll, fetchStats, create, update, remove } = useFarmTasks();
   const { items: fields, fetchAll: fetchFields } = useGrowFields();
   const { items: plantings, fetchAll: fetchPlantings } = usePlantings();
-  const { allCattles, fetchAllCattle } = useCattle();
-  const { allLivestock, fetchAllLivestock } = useLivestock();
 
   const [view, setView] = useState<ViewMode>("list");
   const [open, setOpen] = useState(false);
@@ -105,17 +100,9 @@ export default function ActivitiesPage() {
     } catch {
       setUsers([]);
     }
-    if (isAgriculture) {
-      fetchFields();
-      fetchPlantings();
-    } else {
-      await fetchAllCattle();
-      await fetchAllLivestock();
-    }
-  }, [fetchAllCattle, fetchAllLivestock, fetchFields, fetchPlantings, isAgriculture]);
-
-  const cattleList = (allCattles as any)?.data?.data ?? [];
-  const livestockList = (allLivestock as any)?.data?.data ?? [];
+    fetchFields();
+    fetchPlantings();
+  }, [fetchFields, fetchPlantings]);
 
   useEffect(() => {
     fetchAll(filterStatus || filterCategory ? { ...(filterStatus && { status: filterStatus }), ...(filterCategory && { category: filterCategory }) } : undefined);
@@ -251,6 +238,7 @@ export default function ActivitiesPage() {
   );
 
   return (
+    <FarmCategoryGuard require="AGRICULTURE">
     <FarmRequiredNotice>
     <div className="space-y-5">
       <div className="panel">
@@ -480,31 +468,18 @@ export default function ActivitiesPage() {
                 </div>
               </div>
 
-              {isAgriculture ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <select className="form-select" value={form.fieldId} onChange={(e) => setForm({ ...form, fieldId: e.target.value })}>
-                    <option value="">{t("activities.linkField")}</option>
-                    {fields.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                  </select>
-                  <select className="form-select" value={form.plantingId} onChange={(e) => setForm({ ...form, plantingId: e.target.value })}>
-                    <option value="">{t("activities.linkPlanting")}</option>
-                    {plantings.map((p) => (
-                      <option key={p.id} value={p.id}>{p.cropType?.name} — {p.field?.name}</option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <select className="form-select" value={form.cattleId} onChange={(e) => setForm({ ...form, cattleId: e.target.value })}>
-                    <option value="">{t("activities.linkCattle")}</option>
-                    {cattleList.map((c: any) => <option key={c.id} value={c.id}>{c.tagNumber}</option>)}
-                  </select>
-                  <select className="form-select" value={form.livestockId} onChange={(e) => setForm({ ...form, livestockId: e.target.value })}>
-                    <option value="">{t("activities.linkLivestock")}</option>
-                    {livestockList.map((l: any) => <option key={l.id} value={l.id}>{l.tagNumber} ({l.species})</option>)}
-                  </select>
-                </div>
-              )}
+              <div className="grid grid-cols-2 gap-2">
+                <select className="form-select" value={form.fieldId} onChange={(e) => setForm({ ...form, fieldId: e.target.value })}>
+                  <option value="">{t("activities.linkField")}</option>
+                  {fields.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+                <select className="form-select" value={form.plantingId} onChange={(e) => setForm({ ...form, plantingId: e.target.value })}>
+                  <option value="">{t("activities.linkPlanting")}</option>
+                  {plantings.map((p) => (
+                    <option key={p.id} value={p.id}>{p.cropType?.name} — {p.field?.name}</option>
+                  ))}
+                </select>
+              </div>
 
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">{t("activities.checklist")}</label>
@@ -551,5 +526,6 @@ export default function ActivitiesPage() {
       </Transition>
     </div>
     </FarmRequiredNotice>
+    </FarmCategoryGuard>
   );
 }

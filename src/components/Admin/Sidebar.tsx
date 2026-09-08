@@ -5,7 +5,6 @@ import {
   BuildingOffice2Icon,
   Cog6ToothIcon,
   DocumentChartBarIcon,
-  ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
 import { FaSwatchbook } from "react-icons/fa";
 import { GiGoat } from "react-icons/gi";
@@ -53,7 +52,6 @@ const Sidebar = () => {
     { nameKey: "nav.farms", to: "/account/farms", icon: IconHome, current: location.pathname.startsWith("/account/farms"), roles: ["SUPERADMIN", "ADMIN", "MANAGER"] },
     { nameKey: "nav.cattle", to: "/account/cattle", icon: IconCow, current: location.pathname === "/account/cattle", roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"] },
     { nameKey: "nav.livestock", to: "/account/livestock", icon: GiGoat, current: location.pathname.startsWith("/account/livestock"), roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"] },
-    { nameKey: "nav.activities", to: "/account/activities", icon: ClipboardDocumentListIcon, current: location.pathname === "/account/activities", roles: ["SUPERADMIN", "ADMIN", "MANAGER", "VETERINARIAN"] },
     { nameKey: "nav.production", to: "/account/production", icon: FaSwatchbook, current: location.pathname.startsWith("/account/production"), roles: ["SUPERADMIN", "ADMIN", "MANAGER"] },
     { nameKey: "nav.wasteProduction", to: "/account/waste-logs", icon: IconTrashLines, current: location.pathname === "/account/waste-logs", roles: ["SUPERADMIN", "ADMIN", "MANAGER"] },
     { nameKey: "nav.stock", to: "/account/stock", icon: FaSwatchbook, current: location.pathname.startsWith("/account/stock"), roles: ["SUPERADMIN", "ADMIN", "MANAGER"] },

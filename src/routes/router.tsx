@@ -101,7 +101,7 @@ export default function AppRoutes() {
                 <Route path='plantings' element={<PlantingsPage />} />
                 <Route path='harvests' element={<HarvestsPage />} />
                 <Route path='crop-plan' element={<CropPlanPage />} />
-                <Route path='activities' element={<ActivitiesPage />} />
+                <Route path='activities' element={<Ag><ActivitiesPage /></Ag>} />
                 <Route path='schedule' element={<Ag><SchedulePage /></Ag>} />
                 <Route path='schedule/timesheets' element={<Ag><TimesheetsPage /></Ag>} />
                 <Route path='plantings/location-map' element={<Ag><LocationMapPage /></Ag>} />
