@@ -1,0 +1,94 @@
+/* DiFarm schedule calendar — layout from schedule module, DiFarm theme colors */
+.schedule-calendar-difarm .fc {
+  --fc-border-color: rgb(224 230 237 / 0.4);
+  --fc-today-bg-color: rgba(34, 139, 34, 0.08);
+  --fc-neutral-bg-color: #fafafa;
+  --fc-page-bg-color: #fff;
+  font-family: inherit;
+}
+
+.schedule-calendar-difarm .fc .fc-scrollgrid {
+  border: 1px solid rgb(224 230 237 / 0.4);
+  border-radius: 10px;
+}
+
+.schedule-calendar-difarm .fc .fc-col-header-cell {
+  background-color: rgb(224 230 237 / 0.3);
+  padding: 12px 8px;
+  font-weight: 500;
+  font-size: 13px;
+  color: #506690;
+}
+
+.schedule-calendar-difarm .fc .fc-timegrid-axis-cushion,
+.schedule-calendar-difarm .fc .fc-timegrid-slot-label-cushion {
+  font-size: 12px;
+  color: #506690;
+}
+
+.schedule-calendar-difarm .fc .fc-timegrid-slot {
+  height: 48px;
+}
+
+.schedule-calendar-difarm .fc .fc-timegrid-slot-minor {
+  border-top-style: dashed;
+  border-top-color: rgb(224 230 237 / 0.35);
+}
+
+.schedule-calendar-difarm .fc .fc-timegrid-slot-label {
+  vertical-align: top;
+  padding-top: 4px;
+}
+
+.schedule-calendar-difarm .fc .fc-timegrid-col.fc-day-today,
+.schedule-calendar-difarm .fc .fc-daygrid-day.fc-day-today {
+  background-color: rgba(34, 139, 34, 0.08) !important;
+}
+
+.schedule-calendar-difarm .fc .fc-day-today .fc-col-header-cell-cushion {
+  color: #228b22;
+  font-weight: 600;
+}
+
+.schedule-calendar-difarm .fc .fc-event {
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 1px 4px;
+  border: none;
+}
+
+.schedule-calendar-difarm .fc-theme-standard td,
+.schedule-calendar-difarm .fc-theme-standard th {
+  border-color: rgb(224 230 237 / 0.4) !important;
+}
+
+.schedule-calendar-difarm .fc .fc-week-number {
+  font-size: 12px;
+  color: #506690;
+  font-weight: 500;
+}
+
+.schedule-calendar-difarm .fc-h-event .fc-event-main {
+  color: #fff;
+}
+
+.schedule-calendar-difarm .fc .fc-list-day-cushion {
+  background: rgb(224 230 237 / 0.2);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.dark .schedule-calendar-difarm .fc {
+  --fc-border-color: #191e3a;
+  --fc-today-bg-color: rgba(34, 139, 34, 0.15);
+  --fc-page-bg-color: #0e1726;
+}
+
+.dark .schedule-calendar-difarm .fc .fc-col-header-cell {
+  background-color: #1a2941;
+  color: #e0e6ed;
+}
+
+.dark .schedule-calendar-difarm .fc .fc-day-today .fc-col-header-cell-cushion {
+  color: #4ade80;
+}

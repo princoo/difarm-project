@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { useLocation, useNavigate } from '@/lib/router-compat';
 import { getFarmId, clearFarmId } from '@/utils/farmId';
+import { getDashboardMode, clearDashboardMode } from '@/utils/dashboardMode';
 import Footer from './Footer';
 import toast from 'react-hot-toast';
 import { storage } from '@/utils';
@@ -57,11 +58,16 @@ export default function AdminLayout({ children }: { children?: ReactNode }) {
 
     useEffect(() => {
         if (!storage.getToken()) return;
-        if (getFarmId()) return;
 
         const user = isLoggedIn();
-        if (isSuperAdmin(user?.role)) return;
+        if (isSuperAdmin(user?.role)) {
+            if (!getDashboardMode() && location.pathname.startsWith('/account')) {
+                navigate('/choose-dashboard', { replace: true });
+            }
+            return;
+        }
 
+        if (getFarmId()) return;
         navigate('/choose-farm', { replace: true });
     }, [location.pathname, navigate]);
 
@@ -73,6 +79,7 @@ export default function AdminLayout({ children }: { children?: ReactNode }) {
     const logout = () => {
       storage.removeToken();
       clearFarmId();
+      clearDashboardMode();
       navigate("/login");
       toast.error("You logged out");
     };

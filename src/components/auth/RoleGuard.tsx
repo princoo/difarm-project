@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from '@/lib/router-compat';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { canAccessRoute, FARM_OPTIONAL_PATHS } from '@/utils/permissions';
 import { getFarmId } from '@/utils/farmId';
+import { getDashboardMode } from '@/utils/dashboardMode';
 
 type RoleGuardProps = {
   children: ReactNode;
@@ -38,6 +39,15 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     );
     if (!farmOptional && !getFarmId() && user.role !== 'SUPERADMIN') {
       navigate('/choose-farm', { replace: true });
+      return;
+    }
+
+    if (
+      user.role === 'SUPERADMIN' &&
+      location.pathname.startsWith('/account') &&
+      !getDashboardMode()
+    ) {
+      navigate('/choose-dashboard', { replace: true });
     }
   }, [user, location.pathname, allowedRoles, navigate]);
 

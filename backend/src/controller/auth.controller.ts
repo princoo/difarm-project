@@ -9,7 +9,7 @@ import { generateEmailVerificationToken, generateForgotPasswordToken, verifyToke
 import { UserI } from "../interface/user.interface";
 import userService from "../service/user.service";
 import templateMails from "../util/templateMails";
-import { Roles } from "@prisma/client";
+import { Roles, FarmingMode } from "@prisma/client";
 import farmService from "../service/farm.service";
 import { paginate } from "../util/paginate";
 import { createLog } from "../service/activityLog.service";
@@ -19,7 +19,7 @@ const responseHandler = new ResponseHandler();
 
 export const registerUser = async (req: Request, res: Response) => {
     try {
-        const { fullname, username, email, gender, phone, password, farmId } = req.body;
+        const { fullname, username, email, gender, phone, password, farmId, farmingMode } = req.body;
         const RequestUser = (req as any).user.data;
         let role:Roles;
 
@@ -88,6 +88,10 @@ export const registerUser = async (req: Request, res: Response) => {
                 email,
                 phone,
                 role,
+                farmingMode:
+                  RequestUser.role === Roles.SUPERADMIN && role === Roles.ADMIN
+                    ? (farmingMode as FarmingMode) || FarmingMode.LIVESTOCK
+                    : FarmingMode.LIVESTOCK,
                 password: await hashPassword(password),
                 status: !inactiveUntilActivated,
             },

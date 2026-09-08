@@ -13,8 +13,10 @@ const responseHandler = new ResponseHandler();
 const profileFields = [
   'registrationNo', 'description', 'yearEstablished', 'grazingArea',
   'housingCapacity', 'primaryLivestock', 'breeds', 'herdSizeEstimate',
+  'primaryCrops', 'cultivatedArea', 'irrigationType', 'soilType', 'fieldCountEstimate',
   'contactPhone', 'contactEmail', 'emergencyContact', 'landmarks',
   'latitude', 'longitude', 'waterSource', 'hasElectricity', 'veterinaryAccess',
+  'farmCategory',
 ] as const;
 
 function pickFarmProfile(body: Record<string, unknown>) {

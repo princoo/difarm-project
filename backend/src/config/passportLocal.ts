@@ -47,7 +47,7 @@ passport.use(new LocalStrategy({
     }
     
     const userData = await prisma.user.findFirst({ where: { accountId: userFound.id } });
-    const { id, email, role, status, phone } = userFound;
+    const { id, email, role, status, phone, farmingMode } = userFound;
     const accountUsername = userFound.username;
     const userDataPayLoad = {
       id,
@@ -56,6 +56,7 @@ passport.use(new LocalStrategy({
       email,
       role,
       status,
+      farmingMode,
     };
     const token = generateToken(userDataPayLoad);
     return done(null, {
@@ -67,6 +68,7 @@ passport.use(new LocalStrategy({
         phone,
         role,
         status,
+        farmingMode,
       },
       token,
     });

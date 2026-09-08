@@ -25,6 +25,7 @@ const userSchema = z.object({
       "Password must be at least 8 characters long and include at least one letter, one number, and one special character"
     ),
   farmId: z.string().min(1, "Farm assignment is required"),
+  farmingMode: z.enum(["LIVESTOCK", "AGRICULTURE", "HYBRID"]).optional(),
 });
 
 type AddUserModalProps = {
@@ -125,6 +126,23 @@ const AddUserModal = ({ isOpen, onClose, handleRefetch }: AddUserModalProps) => 
                   <form onSubmit={handleSubmit(onSubmit)}>
                     {needsFarm && (
                       <div className="mb-4">
+                        {superAdmin && (
+                          <div className="mb-4">
+                            <label htmlFor="farmingMode" className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                              Farming mode
+                            </label>
+                            <select
+                              id="farmingMode"
+                              {...register("farmingMode")}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm dark:bg-gray-800 dark:border-gray-600"
+                              defaultValue="LIVESTOCK"
+                            >
+                              <option value="LIVESTOCK">Livestock only</option>
+                              <option value="AGRICULTURE">Agriculture only</option>
+                              <option value="HYBRID">Hybrid (livestock + agriculture)</option>
+                            </select>
+                          </div>
+                        )}
                         <label
                           htmlFor="farmId"
                           className="block text-sm font-bold text-gray-700 dark:text-gray-300"

@@ -260,7 +260,7 @@ const allTransactions = async (
   const pageSize = asNumber(req.query.pageSize, 10);
   const user = (req as any).user.data;
   const currentPage = Math.max(1, page || 1);
-  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 100);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 5000);
   const from = req.query.from ? new Date(String(req.query.from)) : undefined;
   const to = req.query.to ? new Date(String(req.query.to)) : undefined;
   if (from) from.setHours(0, 0, 0, 0);

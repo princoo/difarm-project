@@ -3,12 +3,121 @@ import prisma from "../db/prisma";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const COLOSTRUM_DAYS = 7;
+/** Days without milk production before an ACTIVE cow is marked inactive. */
+const MILKING_IDLE_DAYS = 7;
 const ESTIMATED_BREEDING_DAYS = 90;
 const GESTATION_DAYS = 283;
 const DRY_PERIOD_DAYS = 60;
 
 const addDays = (date: Date, days: number) =>
   new Date(date.getTime() + days * DAY_MS);
+
+const isCowGender = (gender?: string | null) => {
+  const g = String(gender || "").toUpperCase();
+  return g === "COW" || g === "FEMALE";
+};
+
+/**
+ * Recording milk for a cow marks milking as active immediately.
+ * Does not create/close milking periods (those stay manual for the lactation chart).
+ */
+const markMilkingActiveFromProduction = async (
+  cattleId: string,
+  at: Date = new Date()
+) => {
+  const cattle = await prisma.cattle.findUnique({
+    where: { id: cattleId },
+    select: { id: true, gender: true, milkingStatus: true },
+  });
+  if (!cattle || !isCowGender(cattle.gender)) return null;
+  if (cattle.milkingStatus === MilkingStatus.ACTIVE) {
+    return prisma.cattle.update({
+      where: { id: cattleId },
+      data: { milkingStatusChangedAt: at },
+    });
+  }
+  return prisma.cattle.update({
+    where: { id: cattleId },
+    data: {
+      milkingStatus: MilkingStatus.ACTIVE,
+      milkingStatusChangedAt: at,
+    },
+  });
+};
+
+/**
+ * ACTIVE cows with no milk (or last milk) older than 7 days become INACTIVE.
+ * Manual INACTIVE is already persisted; this only syncs stale ACTIVE labels.
+ * Returns map of cattleId → new status for cows that were updated to INACTIVE.
+ */
+const syncStaleMilkingInactive = async (cattleIds: string[]) => {
+  const ids = [...new Set(cattleIds.filter(Boolean))];
+  const updated = new Map<string, MilkingStatus>();
+  if (ids.length === 0) return updated;
+
+  const activeCows = await prisma.cattle.findMany({
+    where: {
+      id: { in: ids },
+      milkingStatus: MilkingStatus.ACTIVE,
+    },
+    select: {
+      id: true,
+      gender: true,
+      milkingStatusChangedAt: true,
+    },
+  });
+
+  const candidates = activeCows.filter((c) => isCowGender(c.gender));
+  if (candidates.length === 0) return updated;
+
+  const candidateIds = candidates.map((c) => c.id);
+  const milkRows = await prisma.production.findMany({
+    where: {
+      cattleId: { in: candidateIds },
+      productName: { contains: "milk", mode: "insensitive" },
+    },
+    select: { cattleId: true, productionDate: true },
+    orderBy: { productionDate: "desc" },
+  });
+  const lastMilkByCattle = new Map<string, Date>();
+  for (const row of milkRows) {
+    if (!lastMilkByCattle.has(row.cattleId)) {
+      lastMilkByCattle.set(row.cattleId, row.productionDate);
+    }
+  }
+
+  const cutoff = Date.now() - MILKING_IDLE_DAYS * DAY_MS;
+  const staleIds: string[] = [];
+  for (const cow of candidates) {
+    const lastMilk = lastMilkByCattle.get(cow.id) ?? null;
+    const reference = lastMilk ?? cow.milkingStatusChangedAt;
+    if (reference.getTime() < cutoff) staleIds.push(cow.id);
+  }
+
+  if (staleIds.length > 0) {
+    const now = new Date();
+    await prisma.cattle.updateMany({
+      where: { id: { in: staleIds } },
+      data: {
+        milkingStatus: MilkingStatus.INACTIVE,
+        milkingStatusChangedAt: now,
+      },
+    });
+    for (const id of staleIds) updated.set(id, MilkingStatus.INACTIVE);
+  }
+
+  return updated;
+};
+
+/** Sync one cattle and return the effective milking status after sync. */
+const syncCattleMilkingActivity = async (cattleId: string) => {
+  await syncStaleMilkingInactive([cattleId]);
+  const cattle = await prisma.cattle.findUnique({
+    where: { id: cattleId },
+    select: { milkingStatus: true, milkingStatusChangedAt: true },
+  });
+  return cattle;
+};
 
 const changeCattleStatus = async (status: CattleStatus, cattleId: string) => {
   await prisma.cattle.update({
@@ -170,6 +279,22 @@ const setMilkingStatus = async (
       return { cattle: updatedCattle, currentPeriod: null };
     }
 
+    // Already inactive with no open period — allow a direct label flip when the
+    // cow was marked active only via milk production (no lactation period).
+    if (
+      cattle.milkingStatus === MilkingStatus.ACTIVE &&
+      (!cycleStartedAt || Number.isNaN(cycleStartedAt.getTime()))
+    ) {
+      const updatedCattle = await tx.cattle.update({
+        where: { id: cattleId },
+        data: {
+          milkingStatus: MilkingStatus.INACTIVE,
+          milkingStatusChangedAt: effectiveAt,
+        },
+      });
+      return { cattle: updatedCattle, currentPeriod: null };
+    }
+
     // Farm joining mid-cycle: set calving + dry-off in one step so the chart
     // turns on immediately in Dry / rest without inventing missing history.
     if (!cycleStartedAt || Number.isNaN(cycleStartedAt.getTime())) {
@@ -302,6 +427,8 @@ const buildMilkTrend = (
 };
 
 const getCattleReport = async (cattleId: string) => {
+  await syncStaleMilkingInactive([cattleId]);
+
   const cattle = await prisma.cattle.findUnique({
     where: { id: cattleId },
     include: { farm: true },
@@ -469,6 +596,9 @@ export {
   MilkingStatusError,
   recordCalvingFromBirth,
   setMilkingStatus,
+  markMilkingActiveFromProduction,
+  syncStaleMilkingInactive,
+  syncCattleMilkingActivity,
 };
 
 export default {
@@ -477,4 +607,7 @@ export default {
   getCattleReport,
   recordCalvingFromBirth,
   setMilkingStatus,
+  markMilkingActiveFromProduction,
+  syncStaleMilkingInactive,
+  syncCattleMilkingActivity,
 };

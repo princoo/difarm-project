@@ -602,7 +602,10 @@ export default function CattleDetail() {
             milking={report.milking}
             latestInseminationAt={report.breedingRecords[0]?.date}
             canEdit={canManageMilking}
-            onChanged={loadReport}
+            onChanged={async () => {
+              await loadReport();
+              await fetchAllCattle();
+            }}
           />
 
           <LactationCycle

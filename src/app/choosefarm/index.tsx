@@ -20,6 +20,7 @@ type Farm = {
   location: string;
   size: string;
   type: string;
+  farmCategory?: 'LIVESTOCK' | 'AGRICULTURE';
   status?: boolean;
   ownerId?: string;
   managerId?: string | null;
@@ -62,7 +63,7 @@ function ChooseFarm() {
     }
 
     if (isSuperAdmin(user?.role)) {
-      navigate('/account', { replace: true });
+      navigate('/choose-dashboard', { replace: true });
       return;
     }
 
@@ -236,6 +237,9 @@ function ChooseFarm() {
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-24">
                       {farm.name}
                     </h3>
+                    <span className="mt-1 inline-flex w-fit rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-800 dark:bg-teal-900/40 dark:text-teal-200">
+                      {farm.farmCategory === 'AGRICULTURE' ? '🌾 Agriculture' : '🐄 Livestock'}
+                    </span>
 
                     {!isActive && (
                       <p className="mt-2 text-xs text-warning font-medium">
@@ -292,7 +296,7 @@ function ChooseFarm() {
                   No activated farms yet. Please wait for super admin to activate your farm, then return here to continue.
                 </p>
               )}
-              {isFarmAdmin(user?.role) && (
+              {isFarmAdmin(user?.role) && (user?.farmingMode === 'HYBRID' || user?.farmingMode === 'AGRICULTURE' || user?.farmingMode === 'LIVESTOCK') && (
                 <button
                   type="button"
                   className="text-sm text-primary hover:underline"

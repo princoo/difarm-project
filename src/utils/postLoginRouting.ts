@@ -1,5 +1,6 @@
 import { api } from '@/hooks/api';
 import { clearFarmId } from '@/utils/farmId';
+import { clearDashboardMode } from '@/utils/dashboardMode';
 
 export type LoginUser = {
   id?: string;
@@ -82,7 +83,8 @@ export async function resolvePostLoginDestination(
 
   if (role === 'SUPERADMIN') {
     clearFarmId();
-    return { path: '/account', farmCount: 0 };
+    clearDashboardMode();
+    return { path: '/choose-dashboard', farmCount: 0 };
   }
 
   clearFarmId();

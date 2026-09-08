@@ -1,10 +1,11 @@
-import Joi from 'joi';
+import Joi from "joi";
 
 const farmSchema = Joi.object({
     name: Joi.string().min(3).required(),
     location: Joi.string().min(3).required(),
     size: Joi.number().positive().required(),
     type: Joi.string().required(),
+    farmCategory: Joi.string().valid("LIVESTOCK", "AGRICULTURE").optional(),
     ownerId: Joi.string().optional(),
     registrationNo: Joi.string().allow('', null).optional(),
     description: Joi.string().allow('', null).optional(),
@@ -14,6 +15,11 @@ const farmSchema = Joi.object({
     primaryLivestock: Joi.string().allow('', null).optional(),
     breeds: Joi.string().allow('', null).optional(),
     herdSizeEstimate: Joi.number().integer().min(0).optional(),
+    primaryCrops: Joi.string().allow('', null).optional(),
+    cultivatedArea: Joi.number().min(0).optional(),
+    irrigationType: Joi.string().allow('', null).optional(),
+    soilType: Joi.string().allow('', null).optional(),
+    fieldCountEstimate: Joi.number().integer().min(0).optional(),
     contactPhone: Joi.string().allow('', null).optional(),
     contactEmail: Joi.string().email().allow('', null).optional(),
     emergencyContact: Joi.string().allow('', null).optional(),

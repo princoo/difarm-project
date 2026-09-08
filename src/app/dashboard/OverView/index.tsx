@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import MetricsPage from './MetricsPage';
+import FarmbriteDashboard from '../farmbrite/FarmbriteDashboard';
 import OverTime from './components/OverTime';
 import SuperAdminFarmFilter from './components/SuperAdminFarmFilter';
 import { isLoggedIn } from '@/hooks/api/auth';
 import { isSuperAdmin } from '@/utils/permissions';
 import { ALL_FARMS_SCOPE, getFarmId, getReadFarmScope } from '@/utils/farmId';
 import { useSafeT } from '@/hooks/useSafeT';
+import { useEffectiveFarmCategory } from '@/hooks/useEffectiveFarmCategory';
 
 export default function Overview() {
   const { t } = useSafeT();
   const user = isLoggedIn();
   const superAdmin = isSuperAdmin(user?.role);
+  const { isAgriculture, isSuperAdminWorkspace } = useEffectiveFarmCategory();
   const [farmScope, setFarmScope] = useState<string | null>(() =>
     getReadFarmScope(user?.role ?? undefined)
   );
@@ -36,8 +39,12 @@ export default function Overview() {
           <p className="text-gray-600 dark:text-gray-400">
             {t('dashboard.subtitle')}
           </p>
-          {superAdmin && (
+          {superAdmin && isSuperAdminWorkspace && (
             <p className="mt-1 text-sm text-teal-700 dark:text-teal-300">
+              {isAgriculture
+                ? t('dashboard.agricultureWorkspace')
+                : t('dashboard.livestockWorkspace')}
+              {' · '}
               {scopeLabel}
             </p>
           )}
@@ -49,8 +56,14 @@ export default function Overview() {
           />
         )}
       </div>
-      <MetricsPage farmScope={farmScope} />
-      <OverTime farmScope={farmScope} />
+      {isAgriculture ? (
+        <FarmbriteDashboard />
+      ) : (
+        <>
+          <MetricsPage farmScope={farmScope} />
+          <OverTime farmScope={farmScope} />
+        </>
+      )}
     </div>
   );
 }

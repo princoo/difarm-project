@@ -28,6 +28,11 @@ export function requireSelectedFarmId(): string | null {
   return getFarmId();
 }
 
+/** True when a concrete farm id is stored (not "all" / null / invalid). */
+export function hasSelectedFarm(): boolean {
+  return getFarmId() != null;
+}
+
 export function clearFarmId(): void {
   safeStorage()?.removeItem(FARM_ID_KEY);
   if (typeof window !== 'undefined') {

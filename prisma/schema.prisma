@@ -16,13 +16,14 @@ datasource db {
 }
 
 model Account {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  email        String?  @unique
-  phone        String?  @unique
-  role         Roles    @default(ADMIN)
+  id           String       @id @default(uuid())
+  username     String       @unique
+  email        String?      @unique
+  phone        String?      @unique
+  role         Roles        @default(ADMIN)
+  farmingMode  FarmingMode  @default(LIVESTOCK)
   password     String?
-  status       Boolean  @default(true)
+  status       Boolean      @default(true)
 
   users        User[]
   activityLogs ActivityLog[]
@@ -39,6 +40,17 @@ enum Roles {
   VETERINARIAN
 }
 
+enum FarmingMode {
+  LIVESTOCK
+  AGRICULTURE
+  HYBRID
+}
+
+enum FarmCategory {
+  LIVESTOCK
+  AGRICULTURE
+}
+
 model User {
   id          String   @id @default(uuid())
   accountId   String   @unique
@@ -48,6 +60,7 @@ model User {
   
   farms            Farm[]         @relation("UserFarms")
   managedFarmLinks FarmManager[]  @relation("FarmManagers")
+  assignedTasks    FarmTask[]     @relation("TaskAssignee")
 
   account        Account     @relation(fields: [accountId], references: [id])
 
@@ -63,11 +76,12 @@ enum Gender {
 }
 
 model Farm {
-  id          String   @id @default(uuid()) 
-  name        String   @unique 
+  id          String       @id @default(uuid()) 
+  name        String       @unique 
   location    String   
   size        Float    // Size of the farm in acres or hectares
   type        String   // Type of farm (e.g., crop, livestock, mixed)
+  farmCategory FarmCategory @default(LIVESTOCK)
   ownerId     String?
   managerId   String?
   status      Boolean  @default(true)   
@@ -80,6 +94,11 @@ model Farm {
   primaryLivestock   String?
   breeds             String?
   herdSizeEstimate   Int?
+  primaryCrops       String?
+  cultivatedArea     Float?
+  irrigationType     String?
+  soilType           String?
+  fieldCountEstimate Int?
   contactPhone       String?
   contactEmail       String?
   emergencyContact   String?
@@ -113,7 +132,13 @@ model Farm {
   medicines      Medicine[]
   medicineUsages MedicineUsage[]
 
+  cropTypes   CropType[]
+  growFields  GrowField[]
+  plantings   Planting[]
+  farmTasks   FarmTask[]
+
   @@index([ownerId])
+  @@index([farmCategory])
 }
 
 model FarmManager {
@@ -151,7 +176,8 @@ model Cattle {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  farm             Farm         @relation("FarmToCattle", fields: [farmId], references: [id])
+  farm             Farm              @relation("FarmToCattle", fields: [farmId], references: [id])
+  farmTasks        FarmTask[]
 
   productions      Production[]
   vaccinations  Vaccination[]
@@ -188,6 +214,7 @@ model Livestock {
   updatedAt        DateTime          @updatedAt
 
   farm             Farm              @relation("FarmToLivestock", fields: [farmId], references: [id], onDelete: Cascade)
+  farmTasks        FarmTask[]
   vaccinations     Vaccination[]
   medicineUsages   MedicineUsage[]
 
@@ -577,4 +604,198 @@ model MedicineUsage {
   @@index([toolId])
   @@index([cattleId])
   @@index([livestockId])
+}
+
+model CropType {
+  id              String   @id @default(uuid())
+  farmId          String
+  name            String
+  category        String?
+  daysToMaturity  Int?
+  rowSpacing      Float?
+  plantSpacing    Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  farm            Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  plantings       Planting[]
+
+  @@unique([farmId, name])
+  @@index([farmId])
+}
+
+enum GrowFieldType {
+  FIELD
+  BED
+  GREENHOUSE
+  ORCHARD
+  OTHER
+}
+
+model GrowField {
+  id            String        @id @default(uuid())
+  farmId        String
+  name          String
+  size          Float?
+  unit          String        @default("hectares")
+  fieldType     GrowFieldType @default(FIELD)
+  locationNotes String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  farm          Farm          @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  plantings     Planting[]
+  farmTasks     FarmTask[]
+
+  @@unique([farmId, name])
+  @@index([farmId])
+}
+
+enum PlantingStatus {
+  PLANNED
+  ACTIVE
+  HARVESTED
+  COMPLETE
+}
+
+model Planting {
+  id                   String         @id @default(uuid())
+  farmId               String
+  cropTypeId           String
+  fieldId              String
+  plantedDate          DateTime
+  expectedHarvestDate  DateTime?
+  status               PlantingStatus @default(PLANNED)
+  notes                String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  farm                 Farm           @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  cropType             CropType       @relation(fields: [cropTypeId], references: [id], onDelete: Cascade)
+  field                GrowField      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  treatments           CropTreatment[]
+  harvests             Harvest[]
+  farmTasks            FarmTask[]
+
+  @@index([farmId])
+  @@index([cropTypeId])
+  @@index([fieldId])
+  @@index([farmId, status])
+}
+
+enum TreatmentType {
+  IRRIGATION
+  FERTILIZER
+  PESTICIDE
+  HERBICIDE
+  OTHER
+}
+
+model CropTreatment {
+  id          String        @id @default(uuid())
+  plantingId  String
+  type        TreatmentType @default(OTHER)
+  appliedDate DateTime      @default(now())
+  productName String?
+  quantity    Float?
+  unit        String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  planting    Planting      @relation(fields: [plantingId], references: [id], onDelete: Cascade)
+
+  @@index([plantingId])
+}
+
+model Harvest {
+  id            String   @id @default(uuid())
+  plantingId    String
+  harvestDate   DateTime @default(now())
+  quantity      Float
+  unit          String   @default("kg")
+  qualityGrade  String?
+  lossQuantity  Float?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  planting      Planting @relation(fields: [plantingId], references: [id], onDelete: Cascade)
+
+  @@index([plantingId])
+  @@index([harvestDate])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  MISSED
+  SKIPPED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskCategory {
+  LIVESTOCK
+  CROPS
+  MAINTENANCE
+  ADMIN
+  OTHER
+}
+
+model FarmTask {
+  id              String       @id @default(uuid())
+  farmId          String
+  title           String
+  description     String?
+  status          TaskStatus   @default(TODO)
+  priority        TaskPriority @default(MEDIUM)
+  category        TaskCategory @default(OTHER)
+  color           String?
+  dueDate         DateTime?
+  scheduledDate   DateTime?
+  completedAt     DateTime?
+  hoursSpent      Float?
+  assigneeUserId  String?
+  fieldId         String?
+  plantingId      String?
+  cattleId        String?
+  livestockId     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  farm            Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  assignee        User?        @relation("TaskAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  field           GrowField?   @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+  planting        Planting?    @relation(fields: [plantingId], references: [id], onDelete: SetNull)
+  cattle          Cattle?      @relation(fields: [cattleId], references: [id], onDelete: SetNull)
+  livestock       Livestock?   @relation(fields: [livestockId], references: [id], onDelete: SetNull)
+  checklist       TaskChecklistItem[]
+
+  @@index([farmId])
+  @@index([farmId, status])
+  @@index([farmId, dueDate])
+  @@index([assigneeUserId])
+}
+
+model TaskChecklistItem {
+  id             String   @id @default(uuid())
+  taskId         String
+  label          String
+  done           Boolean  @default(false)
+  assigneeUserId String?
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  task           FarmTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }

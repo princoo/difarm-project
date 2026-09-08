@@ -18,6 +18,7 @@
 
 /* calendar css */
 @import './assets/css/fullcalendar.css';
+@import './assets/css/schedule-calendar.css';
 
 /* sweetalert css */
 @import './assets/css/sweetalert.css';

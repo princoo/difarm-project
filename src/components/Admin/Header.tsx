@@ -19,6 +19,8 @@ import { isLoggedIn } from "@/hooks/api/auth";
 import { roleLabel } from "@/utils/permissions";
 import { useGetFarmById } from "@/hooks/api/farms";
 import { getFarmId, clearFarmId } from "@/utils/farmId";
+import { clearDashboardMode, getDashboardMode } from "@/utils/dashboardMode";
+import HeaderFarmSelector from "./HeaderFarmSelector";
 import IconMenu from "../Icon/IconMenu";
 
 const Header = () => {
@@ -42,6 +44,7 @@ const Header = () => {
     storage.removeToken();
     localStorage.removeItem("Farm_user");
     clearFarmId();
+    clearDashboardMode();
     navigate("/home");
   };
 
@@ -60,6 +63,7 @@ const Header = () => {
     : isSa
       ? t("header.allFarms")
       : "";
+  const dashboardMode = getDashboardMode();
   void farmScopeTick;
 
   return (
@@ -90,11 +94,29 @@ const Header = () => {
           </div>
 
           <div className="flex items-center space-x-1.5 ltr:ml-auto rtl:mr-auto rtl:space-x-reverse dark:text-[#d0d2d6] sm:flex-1 ltr:sm:ml-0 sm:rtl:mr-0 lg:space-x-2">
-            <div className="sm:ltr:mr-auto sm:rtl:ml-auto min-w-0">
+            <div className="sm:ltr:mr-auto sm:rtl:ml-auto min-w-0 flex flex-col sm:flex-row sm:items-center gap-2">
               <p className="text-md truncate">
                 {t("header.welcomeTo")}{" "}
                 <span className="font-bold capitalize">{farmLabel}</span>
               </p>
+              {isSa && dashboardMode && (
+                <HeaderFarmSelector />
+              )}
+              {isSa && dashboardMode && (
+                <p className="text-xs text-teal-700 dark:text-teal-300 truncate">
+                  {dashboardMode === "AGRICULTURE"
+                    ? t("dashboard.agricultureWorkspace")
+                    : t("dashboard.livestockWorkspace")}
+                  {" · "}
+                  <button
+                    type="button"
+                    className="underline hover:text-primary"
+                    onClick={() => navigate("/choose-dashboard")}
+                  >
+                    {t("dashboard.switchWorkspace")}
+                  </button>
+                </p>
+              )}
             </div>
             <LanguageSwitcher compact />
             <div>

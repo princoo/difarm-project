@@ -111,6 +111,13 @@ export const createProduction = async (req: Request, res: Response, _next:NextFu
         if (productName === "MEAT") { // update the cattle status if the product is processed
             await cattleService.changeCattleStatus('PROCESSED', cattleId);
         }
+
+        if (isMilkProduct(productName)) {
+            await cattleService.markMilkingActiveFromProduction(
+                cattleId,
+                productionDateValue
+            );
+        }
         
         responseHandler.setSuccess(StatusCodes.CREATED, 'Production record created successfully.', newProduction);
     } catch (error) {
@@ -126,25 +133,33 @@ export const getAllProductions = async (req: Request, res: Response) => {
   const farmId = asString(req.params.farmId);
   const page = asNumber(req.query.page, 1);
   const pageSize = asNumber(req.query.pageSize, 10);
+  const fetchAll = String(req.query.all || "").toLowerCase() === "true" || req.query.all === "1";
+  // Reports need the full period; allow a higher cap than the UI table default.
+  const maxPageSize = fetchAll ? 20000 : 5000;
   const currentPage = Math.max(1, page || 1);
-  const currentPageSize = Math.min(Math.max(1, pageSize || 10), 500);
+  const currentPageSize = Math.min(Math.max(1, pageSize || 10), maxPageSize);
   const productName = asOptionalString(req.query.productName)?.toUpperCase();
   const from = asOptionalString(req.query.from);
   const to = asOptionalString(req.query.to);
 
-  const skip = (currentPage - 1) * currentPageSize;
-  const take = currentPageSize;
+  const skip = fetchAll ? 0 : (currentPage - 1) * currentPageSize;
+  const take = fetchAll ? maxPageSize : currentPageSize;
 
   try {
     const whereFarm = farmWhere(farmId, user.role);
     const dateFilter: Record<string, Date> = {};
     if (from) {
-      const start = new Date(from);
+      // Parse YYYY-MM-DD as local calendar start (avoid UTC date-only shift).
+      const start = /^\d{4}-\d{2}-\d{2}$/.test(from)
+        ? new Date(`${from}T00:00:00`)
+        : new Date(from);
       start.setHours(0, 0, 0, 0);
       dateFilter.gte = start;
     }
     if (to) {
-      const end = new Date(to);
+      const end = /^\d{4}-\d{2}-\d{2}$/.test(to)
+        ? new Date(`${to}T23:59:59.999`)
+        : new Date(to);
       end.setHours(23, 59, 59, 999);
       dateFilter.lte = end;
     }
@@ -183,8 +198,8 @@ export const getAllProductions = async (req: Request, res: Response) => {
     const paginationResult = paginate(
       productions,
       totalCount,
-      currentPage,
-      currentPageSize
+      fetchAll ? 1 : currentPage,
+      fetchAll ? Math.max(productions.length, 1) : currentPageSize
     );
 
     responseHandler.setSuccess(
@@ -227,12 +242,16 @@ export const getProductionStats = async (req: Request, res: Response) => {
     const whereFarm = farmWhere(farmId, user.role);
     const dateFilter: Record<string, Date> = {};
     if (from) {
-      const start = new Date(from);
+      const start = /^\d{4}-\d{2}-\d{2}$/.test(from)
+        ? new Date(`${from}T00:00:00`)
+        : new Date(from);
       start.setHours(0, 0, 0, 0);
       dateFilter.gte = start;
     }
     if (to) {
-      const end = new Date(to);
+      const end = /^\d{4}-\d{2}-\d{2}$/.test(to)
+        ? new Date(`${to}T23:59:59.999`)
+        : new Date(to);
       end.setHours(23, 59, 59, 999);
       dateFilter.lte = end;
     }
@@ -450,6 +469,13 @@ export const updateProduction = async (req: Request, res: Response) => {
                     quantityDelta
                 );
             }
+        }
+
+        if (isMilkProduct(resultingProductName) && cattleId) {
+            await cattleService.markMilkingActiveFromProduction(
+                cattleId,
+                resultingDate
+            );
         }
 
         responseHandler.setSuccess(StatusCodes.OK, 'Production record updated successfully.', updatedProduction);

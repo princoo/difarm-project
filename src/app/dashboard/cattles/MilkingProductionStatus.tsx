@@ -129,7 +129,11 @@ export default function MilkingProductionStatus({
       if (isActive || hasOpenPeriod) {
         const effectiveAt = new Date(`${dryOffDate}T12:00:00`).toISOString();
         await updateCattleMilkingStatus(cattleId, 'INACTIVE', effectiveAt);
-        toast.success('Dry / rest date set — lactation chart updated');
+        toast.success(
+          hasOpenPeriod
+            ? 'Dry / rest date set — lactation chart updated'
+            : 'Milking marked inactive'
+        );
       } else if (inactiveAction === 'start') {
         const effectiveAt = new Date(`${calvingDate}T12:00:00`).toISOString();
         await updateCattleMilkingStatus(cattleId, 'ACTIVE', effectiveAt);
@@ -267,11 +271,13 @@ export default function MilkingProductionStatus({
                 )}
                 {saving
                   ? 'Saving…'
-                  : isActive || hasOpenPeriod
-                    ? 'Set dry / rest'
-                    : inactiveAction === 'dry'
-                      ? 'Start chart in dry / rest'
-                      : 'Start chart from birth'}
+                  : isActive && !hasOpenPeriod
+                    ? 'Mark milking inactive'
+                    : isActive || hasOpenPeriod
+                      ? 'Set dry / rest'
+                      : inactiveAction === 'dry'
+                        ? 'Start chart in dry / rest'
+                        : 'Start chart from birth'}
               </button>
             </div>
           </div>

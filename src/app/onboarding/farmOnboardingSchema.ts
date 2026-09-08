@@ -128,6 +128,7 @@ export function buildFarmPayload(values: FarmOnboardingValues, ownerId?: string)
     location: values.locationText.trim(),
     size: parseFloat(values.size),
     type: values.type,
+    farmCategory: 'LIVESTOCK' as const,
     ownerId,
     registrationNo: values.registrationNo?.trim() || undefined,
     description: values.description?.trim() || undefined,

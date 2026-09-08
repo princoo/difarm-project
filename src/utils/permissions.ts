@@ -13,6 +13,11 @@ export type Entity =
   | 'farms'
   | 'cattle'
   | 'livestock'
+  | 'cropTypes'
+  | 'fields'
+  | 'plantings'
+  | 'harvests'
+  | 'treatments'
   | 'production'
   | 'productionTotals'
   | 'productionTransactions'
@@ -24,7 +29,8 @@ export type Entity =
   | 'medicines'
   | 'medicineUsages'
   | 'veterinarians'
-  | 'activityLogs';
+  | 'activityLogs'
+  | 'activities';
 
 export const ROLE_LABELS: Record<Role, string> = {
   SUPERADMIN: 'Super Admin',
@@ -59,6 +65,11 @@ const canCreate: Partial<Record<Entity, Role[]>> = {
   farms: ['SUPERADMIN', 'ADMIN'],
   cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   livestock: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  cropTypes: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  fields: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  plantings: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  harvests: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  treatments: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
@@ -71,6 +82,7 @@ const canCreate: Partial<Record<Entity, Role[]>> = {
   medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   veterinarians: ['SUPERADMIN', 'ADMIN'],
   activityLogs: [],
+  activities: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
 };
 
 /** Edit: farm admin or above, with operational corrections available to managers. */
@@ -79,6 +91,11 @@ const canUpdate: Partial<Record<Entity, Role[]>> = {
   farms: ['SUPERADMIN', 'ADMIN'],
   cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   livestock: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  cropTypes: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  fields: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  plantings: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  harvests: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  treatments: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN'],
   productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
@@ -91,6 +108,7 @@ const canUpdate: Partial<Record<Entity, Role[]>> = {
   medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   veterinarians: ['SUPERADMIN', 'ADMIN'],
   activityLogs: [],
+  activities: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
 };
 
 const canDelete: Partial<Record<Entity, Role[]>> = {
@@ -98,6 +116,11 @@ const canDelete: Partial<Record<Entity, Role[]>> = {
   farms: ['SUPERADMIN', 'ADMIN'],
   cattle: ['SUPERADMIN', 'ADMIN'],
   livestock: ['SUPERADMIN', 'ADMIN'],
+  cropTypes: ['SUPERADMIN', 'ADMIN'],
+  fields: ['SUPERADMIN', 'ADMIN'],
+  plantings: ['SUPERADMIN', 'ADMIN'],
+  harvests: ['SUPERADMIN', 'ADMIN'],
+  treatments: ['SUPERADMIN', 'ADMIN'],
   production: ['SUPERADMIN', 'ADMIN'],
   productionTotals: ['SUPERADMIN', 'ADMIN'],
   productionTransactions: ['SUPERADMIN', 'ADMIN'],
@@ -110,6 +133,7 @@ const canDelete: Partial<Record<Entity, Role[]>> = {
   medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   veterinarians: [],
   activityLogs: [],
+  activities: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
 };
 
 /** View access when create/update/delete alone would miss a role (e.g. managers on farms). */
@@ -117,6 +141,11 @@ const canViewExtra: Partial<Record<Entity, Role[]>> = {
   farms: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   cattle: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   livestock: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  cropTypes: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  fields: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  plantings: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  harvests: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
+  treatments: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   production: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTotals: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
   productionTransactions: ['SUPERADMIN', 'ADMIN', 'MANAGER'],
@@ -129,6 +158,7 @@ const canViewExtra: Partial<Record<Entity, Role[]>> = {
   medicineUsages: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   veterinarians: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   activityLogs: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
+  activities: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'],
   users: ['SUPERADMIN', 'ADMIN'],
 };
 
@@ -136,6 +166,7 @@ const canViewExtra: Partial<Record<Entity, Role[]>> = {
 export const FARM_OPTIONAL_PATHS = [
   '/account/profile',
   '/register-farm',
+  '/choose-dashboard',
 ];
 
 /** Path prefixes → roles allowed to open them (direct URL + RoleGuard). */
@@ -145,6 +176,11 @@ const ROUTE_ROLES: { prefix: string; roles: Role[] }[] = [
   { prefix: '/account/farms', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/cattle', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account/livestock', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
+  { prefix: '/account/crop-types', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/fields', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/plantings', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/harvests', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/crop-plan', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/production_totals', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/production_transactions', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/production', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
@@ -153,6 +189,14 @@ const ROUTE_ROLES: { prefix: string; roles: Role[] }[] = [
   { prefix: '/account/stock', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
   { prefix: '/account/health', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account/activity-logs', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
+  { prefix: '/account/activities', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
+  { prefix: '/account/schedule', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
+  { prefix: '/account/resources', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/accounting', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/market', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER'] },
+  { prefix: '/account/contacts', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
+  { prefix: '/account/farm-map', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
+  { prefix: '/account/climate', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account/profile', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
   { prefix: '/account', roles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'VETERINARIAN'] },
 ];

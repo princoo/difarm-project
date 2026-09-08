@@ -98,8 +98,11 @@ export default function Reports() {
   }, [year]);
 
   const load = useCallback(() => {
+    // `all=1` returns the full date range (not capped at 500), so older months
+    // like July keep their milk KPIs instead of showing zeros.
     getProductions({
-      pageSize: 2000,
+      pageSize: 20000,
+      all: 1,
       from: range.from,
       to: range.to,
     });
@@ -108,7 +111,7 @@ export default function Reports() {
       to: range.to,
     });
     getProductionTransactions({
-      pageSize: 2000,
+      pageSize: 5000,
       from: range.from,
       to: range.to,
       productType: 'MILK',

@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { api, queryString } from '.';
 import { storage } from '@/utils';
 import { clearFarmId } from '@/utils/farmId';
+import { clearDashboardMode } from '@/utils/dashboardMode';
 import jwt_decode from 'jwt-decode';
 import { useNavigate } from '@/lib/router-compat';
 
@@ -22,6 +23,7 @@ export const useLogin = () => {
             const { token, userFound } = response.data.user;
             storage.setToken(token);
             clearFarmId();
+            clearDashboardMode();
             localStorage.setItem('Farm_user', JSON.stringify(userFound));
             setLoginSuccess(true);
             toast.success(`Login successful! Welcome ${userFound.username}`);

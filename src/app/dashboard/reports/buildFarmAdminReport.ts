@@ -25,9 +25,16 @@ function sessionKey(raw: string | undefined | null): 'Morning' | 'Evening' | 'Ot
 
 function dayKey(value: string | Date | undefined | null) {
   if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value.trim())) {
+    return value.trim().slice(0, 10);
+  }
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
-  return d.toISOString().slice(0, 10);
+  // Local calendar day — avoid UTC toISOString shifting Rwanda evenings to the prior day.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** Automatically derive chart specs from summarized farm data. */

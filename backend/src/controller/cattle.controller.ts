@@ -139,13 +139,27 @@ export const getCattles = async (req: Request, res: Response) => {
       skip,
       take,
     });
+
+    const stale = await cattleService.syncStaleMilkingInactive(
+      cattles.map((c) => c.id)
+    );
+    const cattlesWithStatus = cattles.map((c) =>
+      stale.has(c.id)
+        ? {
+            ...c,
+            milkingStatus: stale.get(c.id)!,
+            milkingStatusChangedAt: new Date(),
+          }
+        : c
+    );
+
     const totalCount = await prisma.cattle.count({
       where: {
         ...farmScope,
         ...searchCondition,
       },
     });
-    const paginationResult = paginate(cattles, totalCount, currentPage, currentPageSize);
+    const paginationResult = paginate(cattlesWithStatus, totalCount, currentPage, currentPageSize);
 
     responseHandler.setSuccess(StatusCodes.OK, 'Cattles fetched successfully', paginationResult);
     return responseHandler.send(res);
