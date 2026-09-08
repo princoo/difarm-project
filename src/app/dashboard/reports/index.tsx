@@ -171,12 +171,6 @@ export default function Reports() {
     return [current, current - 1, current - 2];
   }, []);
 
-  const autoStats = useMemo(() => {
-    const withData = monthlyPackages.filter((p) => p.meta.hasData).length;
-    const charts = monthlyPackages.reduce((s, p) => s + p.meta.chartCount, 0);
-    return { withData, charts, total: monthlyPackages.length };
-  }, [monthlyPackages]);
-
   const setView = (mode: ViewMode) => {
     setViewMode(mode);
     localStorage.setItem(VIEW_KEY, mode);
@@ -313,15 +307,6 @@ export default function Reports() {
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
-        <span className="font-medium text-primary">{t('pages.autoPipeline')}</span>
-        {' · '}
-        {t('pages.autoPipelineHint', {
-          months: autoStats.withData,
-          charts: autoStats.charts,
-        })}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
